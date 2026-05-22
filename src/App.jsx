@@ -41,10 +41,10 @@ const initialDevices = [
 const cssText = `
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root{
-  --bg:     #f5f5f3; --bg2:    #ffffff; --bg3:    #f0efed;
-  --s0:     #ebebea; --s1:     #e2e2e0; --s2:     #d4d4d2;
+  --bg:     #f5f5f3; --bg2:     #ffffff; --bg3:     #f0efed;
+  --s0:     #ebebea; --s1:      #e2e2e0; --s2:      #d4d4d2;
   --b0:     rgba(0,0,0,0.07); --b1:     rgba(0,0,0,0.12); --b2:     rgba(0,0,0,0.22);
-  --t0:     #111111; --t1:     #333333; --t2:     #6b6b6b; --t3:     #a0a0a0; --t4:     #d0d0d0;
+  --t0:     #111111; --t1:      #333333; --t2:      #6b6b6b; --t3:      #a0a0a0; --t4:      #d0d0d0;
   --c-stored:  #5a6472; --c-inuse:   #1a1a1a; --c-lent:    #7a6e68;
   --c-stored-bg:  rgba(90,100,114,0.07); --c-inuse-bg:   rgba(26,26,26,0.05); --c-lent-bg:    rgba(122,110,104,0.07);
   --c-stored-border: rgba(90,100,114,0.18); --c-inuse-border:  rgba(26,26,26,0.16); --c-lent-border:   rgba(122,110,104,0.18);
@@ -73,7 +73,7 @@ body::before{
 @keyframes gSpin {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @keyframes gSpinR{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
 .gear-path{fill:none;stroke-linecap:round;}
-.login-card{width:440px;background:var(--bg2);border:1px solid var(--b1);border-radius:20px;padding:40px 40px 34px;box-shadow:0 0 0 1px rgba(0,0,0,0.04),0 20px 60px rgba(0,0,0,0.12);animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;}
+.login-card{width:360px;background:var(--bg2);border:1px solid var(--b1);border-radius:20px;padding:32px 32px 28px;box-shadow:0 0 0 1px rgba(0,0,0,0.04),0 20px 60px rgba(0,0,0,0.12);animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;}
 @keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:none;}}
 .login-brand{text-align:center;margin-bottom:30px;}
 .login-mark{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;background:var(--t0);font-family:var(--fA);font-size:22px;color:var(--bg2);margin-bottom:14px;letter-spacing:1px;}
@@ -96,6 +96,8 @@ body::before{
 .btn-guest:hover{background:var(--s0);color:var(--t1);border-color:var(--b2);}
 .login-error{padding:11px 15px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:var(--fM);font-size:11px;letter-spacing:.3px;display:none;margin-bottom:10px;}
 .login-error.show{display:block;color:#e53e3e;}
+.btn-install{position:fixed;top:24px;right:24px;z-index:1001;padding:8px 16px;background:var(--t0);color:var(--bg2);border-radius:8px;font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.btn-install:hover{background:var(--t1);transform:translateY(-1px);}
 .create-hint{font-family:var(--fM);font-size:10px;color:var(--t3);text-align:center;margin-top:10px;letter-spacing:.5px;}
 .pending-section{margin-top:22px;}
 .pending-label{font-family:var(--fC);font-size:11px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
@@ -288,6 +290,9 @@ export default function App() {
   const [appState, setAppState] = useState('login'); // 'login' or 'app'
   const [loginTab, setLoginTab] = useState('login');
   
+  // Install prompt state
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
   // Auth state
   const [currentUser, setCurrentUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -349,7 +354,17 @@ export default function App() {
       document.head.appendChild(link);
     }
     link.href = manifestURL;
-    return () => URL.revokeObjectURL(manifestURL);
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      URL.revokeObjectURL(manifestURL);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
 
   useEffect(() => {
@@ -435,6 +450,16 @@ export default function App() {
       setToasts(prev => prev.map(t => t.id === id ? {...t, removing: true} : t));
       setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 260);
     }, 2600);
+  };
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
   };
 
   const handleLogin = () => {
@@ -605,9 +630,12 @@ export default function App() {
   if (appState === 'login') {
     return (
       <>
-        <style>{cssText}</style>
+        <style dangerouslySetInnerHTML={{ __html: cssText }} />
         <div className="grid-bg"></div>
         <div id="login-screen">
+          {deferredPrompt && (
+            <button className="btn-install" onClick={handleInstallClick}>INSTALL APP</button>
+          )}
           <div className="login-wrap">
             <div className="gear-scene">
               <svg width="120" height="80" viewBox="0 0 120 80" overflow="visible">
@@ -659,7 +687,7 @@ export default function App() {
             <div className="login-card">
               <div className="login-brand">
                 <div style={{display:'flex',justifyContent:'center',marginBottom:'12px'}}>
-                  <div className="login-mark">Q</div>
+                  <img className="login-mark" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E" alt="Q Base Icon" style={{background:'transparent', padding:0}} />
                 </div>
                 <div className="login-title">Q BASE</div>
                 <div className="login-sub">QA Management System</div>
@@ -762,14 +790,14 @@ export default function App() {
 
   return (
     <>
-      <style>{cssText}</style>
+      <style dangerouslySetInnerHTML={{ __html: cssText }} />
       <div className="grid-bg"></div>
       <div id="app" className="visible">
         
         <header className="topbar">
           <div className="topbar-inner">
             <div className="logo">
-              <div className="logo-mark">Q</div>
+              <img className="logo-mark" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E" alt="Q Base Icon" style={{background:'transparent', padding:0}} />
               <div>
                 <div className="logo-wordmark">Q BASE</div>
                 <div className="logo-sub">QA Management System</div>
@@ -975,7 +1003,6 @@ export default function App() {
           </div>
         </div>
         
-        {}
         <div className={`detail-panel ${isDetailOpen ? 'open' : ''}`}>
           {selectedDeviceObj && (
             <>
@@ -1026,7 +1053,6 @@ export default function App() {
           )}
         </div>
 
-        {}
         <div className={`modal-overlay ${isModalOpen ? 'open' : ''}`} onClick={(e)=>{if(e.target===e.currentTarget) setIsModalOpen(false)}}>
           <div className="modal">
             <div className="modal-title">{editingId ? '시료 정보 수정' : '새 시료 등록'}</div>
@@ -1064,7 +1090,6 @@ export default function App() {
           </div>
         </div>
 
-        {}
         <div className={`modal-overlay ${isDeleteModalOpen ? 'open' : ''}`} style={{zIndex:9999}} onClick={(e)=>{if(e.target===e.currentTarget) setIsDeleteModalOpen(false)}}>
           <div className="modal" style={{width:'400px', padding:'28px'}}>
              <div className="modal-title" style={{fontSize:'24px', marginBottom:'16px'}}>삭제 확인</div>
