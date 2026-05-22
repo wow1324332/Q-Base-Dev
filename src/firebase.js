@@ -2,14 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
-// TODO: 다음 대화에서 알려주실 Firebase 설정 값으로 교체될 예정입니다.
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyATKKSrUm6NKATdZdJeDxhQ5Dj2Q32ujh0",
+  authDomain: "q-base-dev.firebaseapp.com",
+  projectId: "q-base-dev",
+  storageBucket: "q-base-dev.firebasestorage.app",
+  messagingSenderId: "756427289812",
+  appId: "1:756427289812:web:217c6ebb1bfbd1d931f741"
 };
 
 // Initialize Firebase
