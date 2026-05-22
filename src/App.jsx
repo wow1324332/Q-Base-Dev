@@ -133,15 +133,40 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
   const [name, setName] = useState('');
   const [remember, setRemember] = useState(false);
 
+  useEffect(() => {
+    // 마운트 시 저장된 로그인 정보가 있는지 확인하고 불러오기
+    const savedId = localStorage.getItem('qaBaseRememberId');
+    const savedPw = localStorage.getItem('qaBaseRememberPw');
+    if (savedId && savedPw) {
+      setId(savedId);
+      setPw(savedPw);
+      setRemember(true);
+    }
+  }, []);
+
   const handleLogin = (e) => {
     e.preventDefault();
     const cleanId = id.trim();
     const cleanPw = pw.trim();
     
+    // 아이디나 비밀번호가 비어있으면 로그인 진행 불가
+    if (!cleanId || !cleanPw) return;
+    // 계정 생성 탭일 경우 이름이 비어있으면 진행 불가
+    if (tab === 'create' && !name.trim()) return;
+
+    // 로그인 기억하기 체크 여부에 따라 로컬 스토리지 저장 또는 삭제
+    if (remember) {
+      localStorage.setItem('qaBaseRememberId', cleanId);
+      localStorage.setItem('qaBaseRememberPw', cleanPw);
+    } else {
+      localStorage.removeItem('qaBaseRememberId');
+      localStorage.removeItem('qaBaseRememberPw');
+    }
+
     if (cleanId === 'wow1324332' && cleanPw === 'djslzja1!') {
       onLogin({ id: cleanId, name: 'ADMIN', role: 'admin' });
     } else {
-      onLogin({ id: cleanId || 'user', name: name.trim() || '사용자', role: 'user' });
+      onLogin({ id: cleanId, name: name.trim() || cleanId, role: 'user' });
     }
   };
 
