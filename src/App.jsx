@@ -106,7 +106,7 @@ const SplashScreen = ({ onComplete }) => {
       <div className="animate-fade-in flex flex-col items-center">
         <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-tr from-gray-100 to-transparent opacity-50"></div>
-          <MonitorSmartphone className="w-12 h-12 text-gray-800 relative z-10" strokeWidth={1.5} />
+          <img src="/icon-192x192.png" alt="QA Base Icon" className="w-14 h-14 relative z-10 object-contain" />
         </div>
         <h1 className="text-4xl font-light tracking-widest text-gray-800 mb-2">QA BASE</h1>
         <p className="text-sm text-gray-500 tracking-wider">Quality Assurance Command Center</p>
@@ -155,8 +155,8 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
       <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-white p-8 animate-fade-in relative z-10">
         
         <div className="flex justify-center mb-8">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl shadow-inner flex items-center justify-center">
-            <MonitorSmartphone className="w-6 h-6 text-gray-700" strokeWidth={1.5} />
+          <div className="w-12 h-12 bg-gray-50 rounded-xl shadow-inner flex items-center justify-center overflow-hidden relative">
+            <img src="/icon-192x192.png" alt="QA Base Icon" className="w-7 h-7 relative z-10 object-contain" />
           </div>
         </div>
 
@@ -758,6 +758,17 @@ export default function App() {
   const [screen, setScreen] = useState('splash');
   const [user, setUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA 설치 프롬프트 상태 추가
+
+  // PWA 설치 프롬프트 이벤트 리스너 추가
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
 
   // Styles Injection (For preview environment)
   useEffect(() => {
@@ -777,6 +788,19 @@ export default function App() {
     setToastMessage(msg);
   };
 
+  // 실제 PWA 설치 로직으로 교체
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      showToast('기기가 PWA 설치를 지원하지 않거나 이미 설치되어 있습니다.');
+    }
+  };
+
   return (
     <>
       {/* Toast Notification */}
@@ -790,7 +814,7 @@ export default function App() {
       {screen === 'login' && (
         <LoginScreen 
           onLogin={handleLogin} 
-          onInstallApp={() => showToast('기기가 PWA 설치를 지원하지 않거나 이미 설치되어 있습니다.')} 
+          onInstallApp={handleInstallApp} 
         />
       )}
 
