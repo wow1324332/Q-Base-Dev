@@ -38,6 +38,8 @@ const initialDevices = [
   {id:14,name:'Galaxy S25+',type:'BAR',status:'사용중',os:'A16/O8.0',serial:'R3CY208XTTV',adid:'',user:'이다은',maker:'Samsung',usim:''},
 ];
 
+const APP_ICON_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E";
+
 const cssText = `
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
 :root{
@@ -73,26 +75,26 @@ body::before{
 @keyframes gSpin {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 @keyframes gSpinR{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
 .gear-path{fill:none;stroke-linecap:round;}
-.login-card{width:320px;background:var(--bg2);border:1px solid var(--b1);border-radius:20px;padding:32px 28px 24px;box-shadow:0 0 0 1px rgba(0,0,0,0.04),0 20px 60px rgba(0,0,0,0.12);animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;}
+.login-card{width:280px;background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:24px 20px 20px;box-shadow:0 0 0 1px rgba(0,0,0,0.04),0 20px 60px rgba(0,0,0,0.12);animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;}
 @keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:none;}}
-.login-brand{text-align:center;margin-bottom:30px;}
-.login-mark{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;background:transparent;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-.login-title{font-family:var(--fA);font-size:36px;letter-spacing:3px;color:var(--t0);line-height:1;}
-.login-sub{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
-.login-tabs{display:flex;background:var(--s0);border:1px solid var(--b0);border-radius:8px;padding:3px;margin-bottom:20px;gap:3px;}
-.login-tab{flex:1;padding:8px;border-radius:6px;border:none;background:none;color:var(--t2);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.login-brand{text-align:center;margin-bottom:20px;}
+.login-mark{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;background:transparent;margin-bottom:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);object-fit:cover;}
+.login-title{font-family:var(--fA);font-size:28px;letter-spacing:3px;color:var(--t0);line-height:1;}
+.login-sub{font-family:var(--fM);font-size:8px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.login-tabs{display:flex;background:var(--s0);border:1px solid var(--b0);border-radius:8px;padding:3px;margin-bottom:16px;gap:3px;}
+.login-tab{flex:1;padding:6px;border-radius:6px;border:none;background:none;color:var(--t2);font-family:var(--fC);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
 .login-tab.active{background:var(--s2);color:var(--t0);}
 .lf-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.lf-label{font-family:var(--fC);font-size:10px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;}
-.lf-input{padding:10px 14px;background:var(--s0);border:1px solid var(--b1);border-radius:8px;color:var(--t0);font-family:var(--fB);font-size:13px;font-weight:300;outline:none;transition:all .2s;}
-.lf-input:focus{border-color:var(--b2);background:var(--s1);}
+.lf-label{font-family:var(--fC);font-size:9px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;}
+.lf-input{padding:8px 12px;background:var(--s0);border:1px solid var(--b1);border-radius:6px;color:var(--t0);font-family:var(--fM);font-size:12px;font-weight:400;letter-spacing:1px;caret-color:#e53e3e;outline:none;transition:all .2s;}
+.lf-input:focus{border-color:var(--b2);background:var(--s1);box-shadow:0 0 10px rgba(0,0,0,0.03);}
 .lf-input::placeholder{color:var(--t3);}
-.btn-login{width:100%;margin-top:4px;padding:12px;background:var(--t0);border:none;border-radius:8px;color:var(--bg);font-family:var(--fA);font-size:16px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
+.btn-login{width:100%;margin-top:4px;padding:10px;background:var(--t0);border:none;border-radius:6px;color:var(--bg);font-family:var(--fA);font-size:14px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
 .btn-login:hover{background:var(--t1);transform:translateY(-1px);}
 .btn-login:active{transform:translateY(0);}
 .login-divider{display:flex;align-items:center;gap:14px;margin:12px 0;font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:1px;}
 .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--b0);}
-.btn-guest{width:100%;padding:10px;background:transparent;border:1px solid var(--b1);border-radius:8px;color:var(--t2);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
+.btn-guest{width:100%;padding:8px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--t2);font-family:var(--fC);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
 .btn-guest:hover{background:var(--s0);color:var(--t1);border-color:var(--b2);}
 .login-error{padding:11px 15px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:var(--fM);font-size:11px;letter-spacing:.3px;display:none;margin-bottom:10px;}
 .login-error.show{display:block;color:#e53e3e;}
@@ -340,7 +342,7 @@ export default function App() {
       background_color: "#f5f5f3",
       theme_color: "#111111",
       icons: [{
-        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E",
+        src: APP_ICON_SVG,
         sizes: "192x192",
         type: "image/svg+xml"
       }]
@@ -354,6 +356,13 @@ export default function App() {
       document.head.appendChild(link);
     }
     link.href = manifestURL;
+
+    if ('serviceWorker' in navigator) {
+      const swCode = "self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('fetch', (e) => {});";
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).catch(() => {});
+    }
 
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
@@ -687,7 +696,7 @@ export default function App() {
             <div className="login-card">
               <div className="login-brand">
                 <div style={{display:'flex',justifyContent:'center',marginBottom:'12px'}}>
-                  <img className="login-mark" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E" alt="Q Base Icon" />
+                  <img className="login-mark" src={APP_ICON_SVG} alt="Q Base Icon" />
                 </div>
                 <div className="login-title">Q BASE</div>
                 <div className="login-sub">QA Management System</div>
@@ -797,7 +806,7 @@ export default function App() {
         <header className="topbar">
           <div className="topbar-inner">
             <div className="logo">
-              <img className="logo-mark" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E" alt="Q Base Icon" />
+              <img className="logo-mark" src={APP_ICON_SVG} alt="Q Base Icon" />
               <div>
                 <div className="logo-wordmark">Q BASE</div>
                 <div className="logo-sub">QA Management System</div>
