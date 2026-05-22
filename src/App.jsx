@@ -1,1121 +1,823 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc } from 'firebase/firestore';
+import { 
+  MonitorSmartphone, Settings, LogOut, Power, User, Users, 
+  LayoutDashboard, Server, Download, ShieldCheck, Search, 
+  Filter, Grid, List, Plus, ChevronRight, ChevronLeft, X
+} from 'lucide-react';
 
-const firebaseConfig = {
-  apiKey: "AIzaSyATKKSrUm6NKATdZdJeDxhQ5Dj2Q32ujh0",
-  authDomain: "q-base-dev.firebaseapp.com",
-  projectId: "q-base-dev",
-  storageBucket: "q-base-dev.firebasestorage.app",
-  messagingSenderId: "756427289812",
-  appId: "1:756427289812:web:217c6ebb1bfbd1d931f741"
-};
+// === CSS Styles for Cinematic Animations ===
+// In a real Vite project, these would go in index.css
+const globalStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = firebaseConfig.appId;
+  body {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f8f9fa;
+    color: #1f2937;
+    overflow: hidden;
+  }
 
-const ADMIN_ID = 'wow1324332';
-const ADMIN_PW = 'djslzja1!';
-const makeEmail = (id) => id + '@qbase.local';
+  /* Smooth Fade In and Up */
+  @keyframes cinematicFadeIn {
+    0% { opacity: 0; transform: translateY(15px); filter: blur(4px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+  .animate-fade-in {
+    animation: cinematicFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
 
-const initialDevices = [
-  {id:1,name:'Galaxy Z Fold7',type:'FOLD',status:'사용중',os:'A16/O8.0',serial:'R3CY70YS5MT',adid:'',user:'홍진의',maker:'Samsung',usim:''},
-  {id:2,name:'Galaxy Z Fold4',type:'FOLD',status:'보관중',os:'A15/O7.0',serial:'R3CTB06WAGB',adid:'e0807df8-b3be-46d9-9d30-749a3f7b5c00',user:'',maker:'Samsung',usim:''},
-  {id:3,name:'Galaxy Z Fold3',type:'FOLD',status:'보관중',os:'A14/O6.1',serial:'R3CR80CYWTV',adid:'',user:'',maker:'Samsung',usim:''},
-  {id:4,name:'Galaxy Z Flip7',type:'FLIP',status:'사용중',os:'A16/O8.0',serial:'R3CY70MCMMB',adid:'',user:'김정근',maker:'Samsung',usim:''},
-  {id:5,name:'Galaxy Z Flip6',type:'FLIP',status:'대여중',os:'A14/O6.1.1',serial:'R3CX608JDXH',adid:'',user:'손건희',maker:'Samsung',usim:''},
-  {id:6,name:'Galaxy Z Flip5',type:'FLIP',status:'보관중',os:'A14/O6.1',serial:'R3CW901XR4A',adid:'',user:'',maker:'Samsung',usim:''},
-  {id:7,name:'Galaxy S22 Ultra',type:'BAR',status:'대여중',os:'A14/O6.1',serial:'R3CT60FXMKM',adid:'8ddefb10-4a58-4397-b22c-d2ae342e2a68',user:'김효선',maker:'Samsung',usim:''},
-  {id:8,name:'Galaxy S22',type:'BAR',status:'보관중',os:'A14/O6.0',serial:'R3CRC0ZH5YZ',adid:'',user:'',maker:'Samsung',usim:''},
-  {id:9,name:'Galaxy S25 Ultra',type:'BAR',status:'사용중',os:'A15/O7.0',serial:'R3CY207FC9R',adid:'74a99bcd-5fa5-4e04-817a-68844c3cb649',user:'김정근',maker:'Samsung',usim:''},
-  {id:10,name:'Galaxy S25',type:'BAR',status:'사용중',os:'A16/O8.0',serial:'R3CY205YAVV',adid:'',user:'김지연',maker:'Samsung',usim:''},
-  {id:11,name:'Galaxy Note9',type:'BAR',status:'보관중',os:'A10/O2.5',serial:'R39K80D3GQ',adid:'',user:'김정근',maker:'Samsung',usim:''},
-  {id:12,name:'Galaxy S7',type:'BAR',status:'보관중',os:'A8.0.0/S9.0',serial:'R39HB0BNVJ',adid:'',user:'',maker:'Samsung',usim:''},
-  {id:13,name:'Galaxy A23',type:'BAR',status:'보관중',os:'A14/O6.1',serial:'R59W300942X',adid:'',user:'김정근',maker:'Samsung',usim:''},
-  {id:14,name:'Galaxy S25+',type:'BAR',status:'사용중',os:'A16/O8.0',serial:'R3CY208XTTV',adid:'',user:'이다은',maker:'Samsung',usim:''},
-];
+  /* Just Fade */
+  @keyframes simpleFade {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  .animate-simple-fade {
+    animation: simpleFade 0.5s ease-in-out forwards;
+  }
 
-const APP_ICON_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23111111'/%3E%3Ctext x='50' y='65' font-size='50' fill='white' text-anchor='middle' font-family='sans-serif'%3EQ%3C/text%3E%3C/svg%3E";
+  /* Breathing Animation for Hovers */
+  @keyframes breathing {
+    0% { box-shadow: 0 0 0px rgba(156, 163, 175, 0); border-color: transparent; }
+    50% { box-shadow: 0 0 15px rgba(156, 163, 175, 0.4); border-color: rgba(209, 213, 219, 0.8); }
+    100% { box-shadow: 0 0 0px rgba(156, 163, 175, 0); border-color: transparent; }
+  }
+  .hover-breath {
+    transition: all 0.3s ease;
+  }
+  .hover-breath:hover {
+    animation: breathing 2.5s infinite ease-in-out;
+    transform: translateY(-2px);
+  }
 
-const cssText = `
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
-:root{
-  --bg:     #f5f5f3; --bg2:     #ffffff; --bg3:     #f0efed;
-  --s0:     #ebebea; --s1:      #e2e2e0; --s2:      #d4d4d2;
-  --b0:     rgba(0,0,0,0.07); --b1:     rgba(0,0,0,0.12); --b2:     rgba(0,0,0,0.22);
-  --t0:     #111111; --t1:      #333333; --t2:      #6b6b6b; --t3:      #a0a0a0; --t4:      #d0d0d0;
-  --c-stored:  #5a6472; --c-inuse:   #1a1a1a; --c-lent:    #7a6e68;
-  --c-stored-bg:  rgba(90,100,114,0.07); --c-inuse-bg:   rgba(26,26,26,0.05); --c-lent-bg:    rgba(122,110,104,0.07);
-  --c-stored-border: rgba(90,100,114,0.18); --c-inuse-border:  rgba(26,26,26,0.16); --c-lent-border:   rgba(122,110,104,0.18);
-  --radius:   10px; --radius-lg:16px;
-  --fA: 'Anton', sans-serif; --fB: 'Barlow', sans-serif; --fC: 'Barlow Condensed', sans-serif; --fM: 'JetBrains Mono', monospace;
-  --max-w: 1440px; --pad: 48px;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--fB);}
-body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity:0.4;
-}
-.grid-bg{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:linear-gradient(var(--b0) 1px,transparent 1px),linear-gradient(90deg,var(--b0) 1px,transparent 1px);
-  background-size:60px 60px;
-}
-#login-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:var(--bg);}
-.login-wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:0;}
-.gear-scene{width:120px;height:80px;margin-bottom:-4px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}
-.gear-center-g{animation:gSpin 9s linear infinite;transform-origin:60px 60px;}
-.gear-left-g {animation:gSpinR 6s linear infinite;transform-origin:18px 60px;}
-.gear-right-g {animation:gSpin 6s linear infinite;transform-origin:102px 60px;}
-@keyframes gSpin {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
-@keyframes gSpinR{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
-.gear-path{fill:none;stroke-linecap:round;}
-.login-card{width:280px;background:var(--bg2);border:1px solid var(--b1);border-radius:16px;padding:24px 20px 20px;box-shadow:0 0 0 1px rgba(0,0,0,0.04),0 20px 60px rgba(0,0,0,0.12);animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;}
-@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:none;}}
-.login-brand{text-align:center;margin-bottom:20px;}
-.login-mark{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;background:transparent;margin-bottom:10px;box-shadow:0 4px 12px rgba(0,0,0,0.1);object-fit:cover;}
-.login-title{font-family:var(--fA);font-size:28px;letter-spacing:3px;color:var(--t0);line-height:1;}
-.login-sub{font-family:var(--fM);font-size:8px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
-.login-tabs{display:flex;background:var(--s0);border:1px solid var(--b0);border-radius:8px;padding:3px;margin-bottom:16px;gap:3px;}
-.login-tab{flex:1;padding:6px;border-radius:6px;border:none;background:none;color:var(--t2);font-family:var(--fC);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
-.login-tab.active{background:var(--s2);color:var(--t0);}
-.lf-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.lf-label{font-family:var(--fC);font-size:9px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;}
-.lf-input{padding:8px 12px;background:var(--s0);border:1px solid var(--b1);border-radius:6px;color:var(--t0);font-family:var(--fM);font-size:12px;font-weight:400;letter-spacing:1px;caret-color:#e53e3e;outline:none;transition:all .2s;}
-.lf-input:focus{border-color:var(--b2);background:var(--s1);box-shadow:0 0 10px rgba(0,0,0,0.03);}
-.lf-input::placeholder{color:var(--t3);}
-.btn-login{width:100%;margin-top:4px;padding:10px;background:var(--t0);border:none;border-radius:6px;color:var(--bg);font-family:var(--fA);font-size:14px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
-.btn-login:hover{background:var(--t1);transform:translateY(-1px);}
-.btn-login:active{transform:translateY(0);}
-.login-divider{display:flex;align-items:center;gap:14px;margin:12px 0;font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:1px;}
-.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--b0);}
-.btn-guest{width:100%;padding:8px;background:transparent;border:1px solid var(--b1);border-radius:6px;color:var(--t2);font-family:var(--fC);font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;}
-.btn-guest:hover{background:var(--s0);color:var(--t1);border-color:var(--b2);}
-.login-error{padding:11px 15px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--t1);font-family:var(--fM);font-size:11px;letter-spacing:.3px;display:none;margin-bottom:10px;}
-.login-error.show{display:block;color:#e53e3e;}
-.btn-install{position:fixed;top:24px;right:24px;z-index:1001;padding:8px 16px;background:var(--t0);color:var(--bg2);border-radius:8px;font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1px;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,0.1);}
-.btn-install:hover{background:var(--t1);transform:translateY(-1px);}
-.create-hint{font-family:var(--fM);font-size:10px;color:var(--t3);text-align:center;margin-top:10px;letter-spacing:.5px;}
-.pending-section{margin-top:22px;}
-.pending-label{font-family:var(--fC);font-size:11px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
-.pending-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:10px;background:var(--s0);border:1px solid var(--b0);margin-bottom:6px;}
-.pending-name{font-family:var(--fB);font-size:14px;font-weight:500;color:var(--t0);}
-.pending-id{font-family:var(--fM);font-size:10px;color:var(--t3);margin-top:1px;}
-.pending-acts{display:flex;gap:6px;}
-.btn-approve{padding:5px 13px;border-radius:7px;border:1px solid var(--b1);background:transparent;color:var(--t1);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .15s;}
-.btn-approve:hover{background:var(--s1);color:var(--t0);}
-.btn-reject{padding:5px 13px;border-radius:7px;border:1px solid var(--b0);background:transparent;color:var(--t3);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .15s;}
-.btn-reject:hover{color:var(--t2);}
-#app{display:flex;min-height:100vh;flex-direction:column;}
-.topbar{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--b1);background:rgba(255,255,255,0.92);backdrop-filter:blur(28px);}
-.topbar-inner{max-width:var(--max-w);margin:0 auto;padding:0 var(--pad);height:66px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
-.logo{display:flex;align-items:center;gap:14px;}
-.logo-mark{width:32px;height:32px;border-radius:8px;background:transparent;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-.logo-wordmark{font-family:var(--fA);font-size:24px;letter-spacing:4px;color:var(--t0);line-height:1;}
-.logo-sub{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
-.view-switcher{display:flex;gap:4px;background:var(--s0);border:1px solid var(--b0);border-radius:10px;padding:4px;}
-.vsw{display:flex;align-items:center;gap:7px;padding:8px 18px;border-radius:7px;border:none;background:none;font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t3);cursor:pointer;transition:all .2s;}
-.vsw svg{opacity:.4;transition:opacity .2s;flex-shrink:0;}
-.vsw:hover{color:var(--t1);}
-.vsw.active{background:var(--s2);color:var(--t0);}
-.vsw.active svg{opacity:1;}
-.topbar-right{display:flex;align-items:center;gap:16px;}
-.tb-stat{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--s0);border:1px solid var(--b1);border-radius:9px;font-family:var(--fC);font-size:13px;font-weight:500;letter-spacing:1px;color:var(--t2);height:42px;}
-.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--t2);animation:pd 2.4s ease-in-out infinite;}
-@keyframes pd{0%,100%{opacity:1;}50%{opacity:.25;}}
-.user-pill{display:flex;align-items:center;gap:10px;padding:6px 16px 6px 6px;background:var(--s0);border:1px solid var(--b1);border-radius:40px;cursor:pointer;transition:all .2s;height:42px;}
-.user-pill:hover{background:var(--s1);}
-.user-av{width:30px;height:30px;border-radius:50%;background:var(--s2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-family:var(--fC);font-size:12px;font-weight:700;color:var(--t0);}
-.user-info-name{font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--t1);}
-.user-info-role{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
-.btn-add{display:flex;align-items:center;gap:8px;padding:0 26px;background:var(--t0);border:none;border-radius:9px;font-family:var(--fA);font-size:16px;letter-spacing:2px;color:var(--bg2);cursor:pointer;transition:all .2s;height:42px;white-space:nowrap;}
-.btn-add:hover{opacity:.85;transform:translateY(-1px);}
-.btn-add:active{transform:none;}
-.btn-logout{padding:0 20px;background:var(--s0);border:1px solid var(--b1);border-radius:9px;font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);cursor:pointer;transition:all .2s;height:42px;white-space:nowrap;}
-.btn-logout:hover{color:var(--t0);border-color:var(--b2);background:var(--s1);}
-.main{flex:1;}
-.main-inner{max-width:var(--max-w);margin:0 auto;padding:40px var(--pad) 60px;display:flex;flex-direction:column;gap:32px;}
-.guest-banner{display:flex;align-items:center;gap:10px;padding:13px 18px;border-radius:10px;background:rgba(0,0,0,0.03);border:1px solid var(--b1);font-family:var(--fM);font-size:11px;color:var(--t2);letter-spacing:.5px;}
-.controls-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.search-box{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--s0);border:1px solid var(--b1);border-radius:10px;transition:all .2s;width:260px;}
-.search-box:focus-within{border-color:var(--b2);background:var(--s1);}
-.search-box svg{color:var(--t3);flex-shrink:0;}
-.search-box input{background:none;border:none;outline:none;font-family:var(--fB);font-size:14px;font-weight:300;color:var(--t0);width:100%;}
-.search-box input::placeholder{color:var(--t3);}
-.chips-group{display:flex;align-items:center;gap:6px;}
-.chips-label{font-family:var(--fC);font-size:10px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;padding-right:2px;}
-.chip{padding:7px 14px;border-radius:8px;border:1px solid var(--b0);background:var(--s0);font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--t3);cursor:pointer;transition:all .2s;}
-.chip:hover{border-color:var(--b1);color:var(--t1);}
-.chip.active{background:var(--s2);border-color:var(--b2);color:var(--t0);}
-.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-.stat-card{background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);padding:28px 24px 22px;cursor:pointer;transition:all .3s ease;position:relative;overflow:hidden;}
-.stat-card:hover{border-color:var(--b1);transform:translateY(-2px);}
-.stat-num{font-family:var(--fA);font-size:64px;line-height:1;letter-spacing:-1px;color:var(--t0);margin-bottom:8px;}
-.stat-lbl{font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-bottom:18px;}
-.stat-bar-t{height:1px;background:var(--b0);}
-.stat-bar-f{height:100%;background:var(--t2);transition:width 1.1s cubic-bezier(.4,0,.2,1);}
-.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
-.kanban-col{background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);overflow:hidden;}
-.kanban-header{padding:20px 22px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b0);}
-.col-title-wrap{display:flex;align-items:center;gap:10px;}
-.col-dot{width:7px;height:7px;border-radius:50%;}
-.dot-stored{background:var(--c-stored);}
-.dot-inuse{background:var(--c-inuse);animation:pd 2s ease-in-out infinite;}
-.dot-lent{background:var(--c-lent);animation:pd 1.5s ease-in-out infinite;}
-.col-title{font-family:var(--fA);font-size:22px;letter-spacing:2px;color:var(--t0);}
-.col-cnt{font-family:var(--fA);font-size:20px;letter-spacing:1px;padding:4px 10px;border-radius:7px;background:var(--s0);color:var(--t2);}
-.kanban-cards{padding:12px;display:flex;flex-direction:column;gap:8px;}
-.device-card{background:var(--bg3);border:1px solid var(--b0);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all .22s ease;animation:cardSlideIn .35s ease forwards;opacity:0;transform:translateY(8px);position:relative;}
-@keyframes cardSlideIn{to{opacity:1;transform:none;}}
-.kanban-cards .device-card:nth-child(1){animation-delay:.03s;}
-.kanban-cards .device-card:nth-child(2){animation-delay:.07s;}
-.kanban-cards .device-card:nth-child(3){animation-delay:.11s;}
-.kanban-cards .device-card:nth-child(4){animation-delay:.15s;}
-.kanban-cards .device-card:nth-child(5){animation-delay:.19s;}
-.device-card:hover{border-color:var(--b1);background:var(--s0);transform:translateY(-2px);}
-.device-card.selected{border-color:var(--b2);background:var(--s0);}
-.device-card.selected::before{content:'';position:absolute;left:0;top:12%;bottom:12%;width:2px;background:var(--t1);border-radius:0 2px 2px 0;}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px;}
-.card-name{font-family:var(--fB);font-size:15px;font-weight:600;color:var(--t0);line-height:1.3;}
-.type-tag{padding:3px 9px;border-radius:5px;flex-shrink:0;font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;background:var(--s2);border:1px solid var(--b1);color:var(--t2);}
-.card-meta{display:flex;flex-direction:column;gap:5px;}
-.meta-line{display:flex;align-items:center;gap:10px;}
-.mk{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;min-width:22px;}
-.mv{font-family:var(--fM);font-size:11px;color:var(--t2);}
-.card-foot{margin-top:14px;padding-top:12px;border-top:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;}
-.user-chip{display:flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border-radius:20px;background:var(--s1);border:1px solid var(--b0);}
-.chip-av{width:18px;height:18px;border-radius:50%;background:var(--s2);display:flex;align-items:center;justify-content:center;font-family:var(--fC);font-size:9px;font-weight:700;color:var(--t1);}
-.chip-name{font-family:var(--fB);font-size:12px;font-weight:500;color:var(--t1);}
-.maker-tag{font-family:var(--fM);font-size:9px;color:var(--t3);}
-.table-wrap{background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);overflow:hidden;}
-.data-table{width:100%;border-collapse:collapse;}
-.data-table thead tr{border-bottom:1px solid var(--b0);}
-.data-table th{padding:15px 18px;text-align:left;font-family:var(--fC);font-size:10px;font-weight:600;color:var(--t3);letter-spacing:2px;text-transform:uppercase;}
-.data-table td{padding:16px 18px;border-bottom:1px solid var(--b0);vertical-align:middle;}
-.data-table tbody tr:last-child td{border-bottom:none;}
-.data-table tbody tr{cursor:pointer;transition:background .12s;}
-.data-table tbody tr:hover td{background:rgba(0,0,0,.025);}
-.data-table tbody tr.selected td{background:rgba(0,0,0,.04);}
-.td-name{font-family:var(--fB);font-size:15px;font-weight:600;color:var(--t0);}
-.td-mono{font-family:var(--fM);font-size:11px;color:var(--t2);}
-.td-dim{font-family:var(--fM);font-size:10px;color:var(--t3);}
-.status-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-family:var(--fC);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
-.pill-stored{background:var(--c-stored-bg);border:1px solid var(--c-stored-border);color:var(--c-stored);}
-.pill-inuse{background:var(--c-inuse-bg);border:1px solid var(--c-inuse-border);color:var(--c-inuse);}
-.pill-lent{background:var(--c-lent-bg);border:1px solid var(--c-lent-border);color:var(--c-lent);}
-.detail-panel{position:fixed;right:0;top:66px;bottom:0;width:380px;background:var(--bg2);border-left:1px solid var(--b1);transform:translateX(100%);transition:transform .33s cubic-bezier(.4,0,.2,1);z-index:50;display:flex;flex-direction:column;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,.08);}
-.detail-panel.open{transform:translateX(0);}
-.panel-hd{padding:28px 28px 22px;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--bg2);z-index:1;}
-.panel-close{position:absolute;right:22px;top:22px;width:30px;height:30px;border-radius:7px;background:var(--s0);border:1px solid var(--b0);color:var(--t2);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all .15s;font-family:var(--fM);}
-.panel-close:hover{background:var(--s1);color:var(--t0);}
-.panel-icon{width:56px;height:56px;border-radius:14px;background:var(--s0);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;}
-.panel-dname{font-family:var(--fA);font-size:28px;letter-spacing:1px;color:var(--t0);margin-bottom:10px;line-height:1.1;}
-.panel-tags{display:flex;gap:6px;flex-wrap:wrap;}
-.panel-body{padding:22px 28px;flex:1;}
-.psec{margin-bottom:26px;}
-.psec-title{font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px;}
-.info-row{display:flex;align-items:center;padding:10px 12px;border-radius:8px;transition:background .12s;}
-.info-row:hover{background:rgba(255,255,255,.02);}
-.ik{font-family:var(--fM);font-size:10px;color:var(--t3);min-width:96px;flex-shrink:0;}
-.iv{font-family:var(--fM);font-size:11px;color:var(--t1);}
-.adid-box{font-family:var(--fM);font-size:10px;color:var(--t2);background:var(--s0);border:1px solid var(--b0);border-radius:9px;padding:12px 14px;word-break:break-all;line-height:1.8;}
-.s-btns{display:flex;gap:7px;flex-wrap:wrap;}
-.s-btn{padding:8px 15px;border-radius:8px;border:1px solid var(--b0);background:var(--s0);font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t2);cursor:pointer;transition:all .18s;}
-.s-btn:hover{border-color:var(--b2);color:var(--t0);background:var(--s1);}
-.panel-acts{padding:18px 28px 24px;border-top:1px solid var(--b0);display:flex;flex-direction:column;gap:8px;}
-.act-btn{padding:12px 16px;border-radius:10px;border:1px solid var(--b1);cursor:pointer;font-family:var(--fA);font-size:17px;letter-spacing:2px;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;}
-.act-btn.primary{background:var(--t0);color:var(--bg);border-color:transparent;}
-.act-btn.primary:hover{background:var(--t1);transform:translateY(-1px);}
-.act-btn.danger{background:transparent;color:var(--t2);border-color:var(--b0);}
-.act-btn.danger:hover{color:var(--t0);border-color:var(--b1);}
-.modal-overlay{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);z-index:150;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
-.modal-overlay.open{opacity:1;pointer-events:auto;}
-.modal{background:var(--bg2);border:1px solid var(--b1);border-radius:20px;padding:36px;width:510px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);transform:translateY(20px);transition:transform .3s cubic-bezier(.4,0,.2,1);}
-.modal-overlay.open .modal{transform:none;}
-.modal-title{font-family:var(--fA);font-size:36px;letter-spacing:2px;color:var(--t0);margin-bottom:26px;}
-.form-group{margin-bottom:16px;}
-.form-label{font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;display:block;}
-.form-input{width:100%;padding:12px 15px;background:var(--s0);border:1px solid var(--b1);border-radius:10px;color:var(--t0);font-family:var(--fB);font-size:14px;font-weight:300;outline:none;transition:all .2s;}
-.form-input:focus{border-color:var(--b2);background:var(--s1);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.modal-acts{display:flex;gap:10px;margin-top:26px;justify-content:flex-end;}
-.btn-cancel{padding:11px 22px;background:var(--s0);border:1px solid var(--b1);border-radius:10px;color:var(--t2);font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .18s;}
-.btn-cancel:hover{background:var(--s1);color:var(--t0);}
-.btn-save{padding:11px 28px;background:var(--t0);border:none;border-radius:10px;color:var(--bg);font-family:var(--fA);font-size:18px;letter-spacing:2px;cursor:pointer;transition:all .18s;}
-.btn-save:hover{background:var(--t1);transform:translateY(-1px);}
-.toast-container{position:fixed;bottom:28px;right:28px;z-index:200;display:flex;flex-direction:column;gap:8px;}
-.toast{padding:13px 20px;background:var(--s1);border:1px solid var(--b1);border-radius:11px;font-family:var(--fB);font-size:13px;font-weight:400;color:var(--t1);box-shadow:0 12px 40px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;animation:tIn .28s cubic-bezier(.4,0,.2,1) both;max-width:320px;}
-@keyframes tIn{from{transform:translateY(16px) scale(.96);opacity:0;}to{transform:none;opacity:1;}}
-.toast.removing{animation:tOut .25s cubic-bezier(.4,0,.2,1) both;}
-@keyframes tOut{to{transform:translateY(10px) scale(.96);opacity:0;}}
-.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:44px;gap:10px;text-align:center;}
-.empty-icon{font-size:32px;opacity:.2;}
-.empty-text{font-family:var(--fM);font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;}
-.page-in{animation:pgIn .45s cubic-bezier(.4,0,.2,1) both;}
-@keyframes pgIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
-::-webkit-scrollbar{width:4px;height:4px;}
-::-webkit-scrollbar-track{background:transparent;}
-::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px;}
-.app-body{display:flex;flex:1;min-height:0;}
-.sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--b1);display:flex;flex-direction:column;padding:24px 16px;gap:4px;position:sticky;top:66px;height:calc(100vh - 66px);overflow-y:auto;}
-.sb-section-label{font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);letter-spacing:2px;text-transform:uppercase;padding:0 12px;margin:16px 0 6px;}
-.sb-section-label:first-child{margin-top:0;}
-.sb-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:1px solid transparent;font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--t2);cursor:pointer;transition:all .18s;position:relative;}
-.sb-item:hover{background:var(--s0);color:var(--t0);}
-.sb-item.active{background:var(--s0);border-color:var(--b1);color:var(--t0);}
-.sb-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;background:var(--t0);border-radius:0 2px 2px 0;}
-.sb-icon{width:18px;height:18px;flex-shrink:0;opacity:.5;}
-.sb-item.active .sb-icon,.sb-item:hover .sb-icon{opacity:1;}
-.sb-divider{height:1px;background:var(--b0);margin:8px 0;}
-.page-content{flex:1;overflow-y:auto;min-width:0;}
-.dash-inner{max-width:var(--max-w);margin:0 auto;padding:48px var(--pad) 64px;display:flex;flex-direction:column;gap:36px;}
-.dash-greeting{display:flex;flex-direction:column;gap:6px;}
-.dash-greet-main{font-family:var(--fA);font-size:52px;letter-spacing:1px;line-height:1;color:var(--t0);}
-.dash-greet-sub{font-family:var(--fM);font-size:11px;color:var(--t3);letter-spacing:1.5px;}
-.dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-.dash-card{background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);padding:32px 28px;display:flex;flex-direction:column;gap:10px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;}
-.dash-card:hover{border-color:var(--b2);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.08);}
-.dash-card-icon{font-size:28px;margin-bottom:4px;}
-.dash-card-title{font-family:var(--fA);font-size:26px;letter-spacing:1px;color:var(--t0);}
-.dash-card-desc{font-family:var(--fB);font-size:13px;font-weight:300;color:var(--t2);line-height:1.6;}
-.dash-card-arrow{position:absolute;right:24px;bottom:24px;font-family:var(--fC);font-size:18px;color:var(--t3);transition:all .18s;}
-.dash-card:hover .dash-card-arrow{color:var(--t0);transform:translateX(4px);}
-.dash-card-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--s0);border:1px solid var(--b0);font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--t2);align-self:flex-start;margin-top:4px;}
+  /* Subtly animated gradient background for Splash */
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .bg-cinematic {
+    background: linear-gradient(-45deg, #f8f9fa, #e9ecef, #dee2e6, #f8f9fa);
+    background-size: 400% 400%;
+    animation: gradientBG 10s ease infinite;
+  }
+
+  /* Hide Scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 `;
 
-export default function App() {
-  const [appState, setAppState] = useState('login'); // 'login' or 'app'
-  const [loginTab, setLoginTab] = useState('login');
-  
-  // Install prompt state
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+const INITIAL_DEVICES = [
+  { id: 'd1', name: 'Galaxy Z Fold 5', type: 'Fold', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung' },
+  { id: 'd2', name: 'iPhone 15 Pro', type: 'Bar', os: 'iOS', status: '사용중', renter: '홍길동', manufacturer: 'Apple' },
+  { id: 'd3', name: 'Galaxy S24 Ultra', type: 'Bar', os: 'Android', status: '대여중', renter: '김철수', manufacturer: 'Samsung' },
+  { id: 'd4', name: 'Galaxy Z Flip 4', type: 'Flip', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung' },
+  { id: 'd5', name: 'iPhone 13 Mini', type: 'Bar', os: 'iOS', status: '보관중', renter: '', manufacturer: 'Apple' },
+];
 
-  // Auth state
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isGuest, setIsGuest] = useState(false);
-  
-  // Login form state
-  const [loginId, setLoginId] = useState('');
-  const [loginPw, setLoginPw] = useState('');
-  const [loginError, setLoginError] = useState('');
-  
-  const [createName, setCreateName] = useState('');
-  const [createId, setCreateId] = useState('');
-  const [createPw, setCreatePw] = useState('');
-  const [createError, setCreateError] = useState('');
-
-  // App data state
-  const [devices, setDevices] = useState([]);
-  const [pendingAccounts, setPendingAccounts] = useState([]);
-  
-  // App view state
-  const [activePage, setActivePage] = useState('dashboard');
-  const [currentView, setCurrentView] = useState('kanban');
-  const [currentFilter, setCurrentFilter] = useState('all');
-  const [currentTypeFilter, setCurrentTypeFilter] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [modalData, setModalData] = useState({
-    name: '', type: 'BAR', status: '보관중', os: '', serial: '', user: '', maker: 'Samsung', usim: '', adid: ''
-  });
-
-  const [toasts, setToasts] = useState([]);
-  const seedAttempted = useRef(false);
-
+// Custom Toast Notification
+const Toast = ({ message, onClose }) => {
   useEffect(() => {
-    const manifest = {
-      name: "Q Base",
-      short_name: "Q Base",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#f5f5f3",
-      theme_color: "#111111",
-      icons: [{
-        src: APP_ICON_SVG,
-        sizes: "192x192",
-        type: "image/svg+xml"
-      }]
-    };
-    const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-    const manifestURL = URL.createObjectURL(blob);
-    let link = document.querySelector('link[rel="manifest"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'manifest';
-      document.head.appendChild(link);
-    }
-    link.href = manifestURL;
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
-    if ('serviceWorker' in navigator) {
-      const swCode = "self.addEventListener('install', (e) => self.skipWaiting()); self.addEventListener('fetch', (e) => {});";
-      const swBlob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(swBlob);
-      navigator.serviceWorker.register(swUrl).catch(() => {});
-    }
+  return (
+    <div className="fixed bottom-6 right-6 z-50 animate-fade-in bg-white/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg border border-gray-100 flex items-center space-x-3">
+      <ShieldCheck className="w-5 h-5 text-gray-700" />
+      <span className="text-sm font-medium text-gray-800">{message}</span>
+    </div>
+  );
+};
 
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      URL.revokeObjectURL(manifestURL);
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
+const SplashScreen = ({ onComplete }) => {
   useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        try { await signInWithCustomToken(auth, __initial_auth_token); } catch(e){}
-      }
-    };
-    initAuth();
+    // 3초 후 완료 (기획서: 시네마틱한 로딩 3~4초 확보)
+    const timer = setTimeout(onComplete, 3000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
 
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const docSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', user.uid));
-          if (docSnap.exists()) {
-             const userData = docSnap.data();
-             if (userData.approved) {
-                 setCurrentUser({ ...userData, uid: user.uid });
-                 setIsGuest(false);
-                 setAppState('app');
-                 setActivePage('dashboard');
-             } else {
-                 signOut(auth);
-                 setLoginError('아직 관리자 승인 대기 중입니다.');
-             }
-          } else {
-             const isSysAdmin = user.email === makeEmail(ADMIN_ID);
-             setCurrentUser({ name: isSysAdmin ? '관리자' : (user.displayName || 'User'), role: isSysAdmin ? 'admin' : 'member', uid: user.uid, approved: true });
-             setIsGuest(false);
-             setAppState('app');
-             setActivePage('dashboard');
-          }
-        } catch (e) { console.error(e); }
-      } else {
-        if (!isGuest) {
-          setCurrentUser(null);
-          setAppState('login');
-        }
-      }
-    });
-    return () => unsub();
-  }, [isGuest]);
+  return (
+    <div className="w-screen h-screen bg-cinematic flex flex-col items-center justify-center animate-simple-fade">
+      <div className="animate-fade-in flex flex-col items-center">
+        <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-gray-100 to-transparent opacity-50"></div>
+          <MonitorSmartphone className="w-12 h-12 text-gray-800 relative z-10" strokeWidth={1.5} />
+        </div>
+        <h1 className="text-4xl font-light tracking-widest text-gray-800 mb-2">QA BASE</h1>
+        <p className="text-sm text-gray-500 tracking-wider">Quality Assurance Command Center</p>
+        
+        {/* Loading Bar */}
+        <div className="w-48 h-1 bg-gray-200 rounded-full mt-12 overflow-hidden">
+          <div className="h-full bg-gray-600 rounded-full w-full origin-left animate-[scaleX_3s_ease-in-out]"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-  useEffect(() => {
-    if (!currentUser && !isGuest) return;
+const LoginScreen = ({ onLogin, onInstallApp }) => {
+  const [tab, setTab] = useState('login');
+  const [id, setId] = useState('');
+  const [pw, setPw] = useState('');
+  const [remember, setRemember] = useState(false);
 
-    const unsubDevices = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'devices'), (snapshot) => {
-        const newDevs = [];
-        snapshot.forEach(d => newDevs.push({ id: d.id, ...d.data() }));
-
-        if (newDevs.length === 0 && currentUser?.role === 'admin' && !seedAttempted.current) {
-            seedAttempted.current = true;
-            initialDevices.forEach(d => {
-                const dCopy = { ...d };
-                delete dCopy.id;
-                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(d.id)), dCopy)
-                  .catch(e => console.error("Seed error:", e));
-            });
-        } else if (newDevs.length > 0) {
-            setDevices(newDevs);
-        }
-    }, (err) => {
-        console.error("DB Error", err);
-        showToast("데이터베이스 연결 실패. 규칙을 확인하세요.");
-    });
-
-    let unsubPending = () => {};
-    if (currentUser?.role === 'admin') {
-        unsubPending = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts'), (snapshot) => {
-            const pending = [];
-            snapshot.forEach(d => pending.push({ _docId: d.id, ...d.data() }));
-            setPendingAccounts(pending);
-        });
-    }
-
-    return () => { unsubDevices(); unsubPending(); };
-  }, [currentUser, isGuest]);
-
-  const showToast = (msg) => {
-    const id = Date.now();
-    setToasts(prev => [...prev, {id, msg, removing: false}]);
-    setTimeout(() => {
-      setToasts(prev => prev.map(t => t.id === id ? {...t, removing: true} : t));
-      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 260);
-    }, 2600);
-  };
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (id === 'wow1324332' && pw === 'djslzja1!') {
+      onLogin({ id, name: 'ADMIN', role: 'admin' });
     } else {
-      showToast("현재 브라우저 환경에서는 설치를 지원하지 않거나 이미 설치되어 있습니다.");
+      // For prototype, any other login is treated as user
+      onLogin({ id: id || 'user', name: id || 'User', role: 'user' });
     }
   };
 
-  const handleLogin = () => {
-    setLoginError('');
-    if (loginId === ADMIN_ID && loginPw === ADMIN_PW) {
-       signInWithEmailAndPassword(auth, makeEmail(loginId), loginPw)
-       .catch((err1) => {
-           if(err1.code === 'auth/operation-not-allowed') {
-               setCurrentUser({ id: loginId, name: '관리자', role: 'admin', uid: 'admin_bypass', approved: true });
-               setIsGuest(false); setAppState('app'); setActivePage('dashboard');
-               return;
-           }
-           createUserWithEmailAndPassword(auth, makeEmail(loginId), loginPw)
-           .then((cred) => {
-               return setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', cred.user.uid), {
-                   id: loginId, name: '관리자', role: 'admin', approved: true
-               });
-           })
-           .catch(e => { 
-               if(e.code === 'auth/operation-not-allowed') {
-                   setCurrentUser({ id: loginId, name: '관리자', role: 'admin', uid: 'admin_bypass', approved: true });
-                   setIsGuest(false); setAppState('app'); setActivePage('dashboard');
-               } else {
-                   setLoginError('로그인 실패: ' + e.message); 
-               }
-           });
-       });
-       return;
-    }
-
-    signInWithEmailAndPassword(auth, makeEmail(loginId), loginPw)
-    .catch(() => setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.'));
+  const handleGuest = () => {
+    onLogin({ id: 'guest', name: 'Guest', role: 'viewer' });
   };
 
-  const handleGuestLogin = () => {
-    setCurrentUser({name: 'GUEST', role: 'guest'});
-    setIsGuest(true);
-    setAppState('app');
-    setActivePage('dashboard');
-  };
+  return (
+    <div className="w-screen h-screen bg-[#f0f2f5] flex items-center justify-center relative animate-simple-fade">
+      {/* PWA Install Button */}
+      <button 
+        onClick={onInstallApp}
+        className="absolute top-8 right-8 flex items-center space-x-2 text-gray-500 hover:text-gray-800 transition-colors bg-white/50 px-4 py-2 rounded-full backdrop-blur hover-breath"
+      >
+        <Download className="w-4 h-4" />
+        <span className="text-xs font-medium tracking-wide">앱 설치</span>
+      </button>
 
-  const handleCreateAccount = () => {
-    setCreateError('');
-    if(!createName || !createId || !createPw) {
-      setCreateError('모든 항목을 입력해주세요.');
-      return;
-    }
-    const docRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts'));
-    setDoc(docRef, { id: createId, pw: createPw, name: createName, role: 'member', approved: false })
-    .then(() => {
-        showToast(`"${createName}" 계정 등록 요청이 접수되었습니다.`);
-        setCreateName(''); setCreateId(''); setCreatePw('');
-        setLoginTab('login');
-    })
-    .catch(e => setCreateError('오류 발생: ' + e.message));
-  };
+      {/* Cinematic wide background feel, small focused modal */}
+      <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-white p-8 animate-fade-in relative z-10">
+        
+        <div className="flex justify-center mb-8">
+          <div className="w-12 h-12 bg-gray-50 rounded-xl shadow-inner flex items-center justify-center">
+            <MonitorSmartphone className="w-6 h-6 text-gray-700" strokeWidth={1.5} />
+          </div>
+        </div>
 
-  const handleLogout = () => {
-    signOut(auth).then(() => {
-      setCurrentUser(null);
-      setIsGuest(false);
-      setIsDetailOpen(false);
-      setSelectedId(null);
-      setLoginId('');
-      setLoginPw('');
-      setAppState('login');
-    });
-  };
+        {/* Tabs */}
+        <div className="flex w-full mb-8 relative border-b border-gray-200">
+          <button 
+            className={`flex-1 pb-3 text-sm font-medium transition-colors ${tab === 'login' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            onClick={() => setTab('login')}
+          >
+            Login
+          </button>
+          <button 
+            className={`flex-1 pb-3 text-sm font-medium transition-colors ${tab === 'create' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
+            onClick={() => setTab('create')}
+          >
+            Create
+          </button>
+          {/* Active indicator */}
+          <div className={`absolute bottom-0 h-[2px] bg-gray-800 w-1/2 transition-transform duration-300 ease-out ${tab === 'login' ? 'translate-x-0' : 'translate-x-full'}`}></div>
+        </div>
 
-  const approveAccount = (acc) => {
-    createUserWithEmailAndPassword(auth, makeEmail(acc.id), acc.pw)
-    .then((cred) => {
-        setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', cred.user.uid), {
-            id: acc.id, name: acc.name, role: acc.role, approved: true
-        });
-        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts', acc._docId));
-        showToast(`"${acc.name}" 계정이 승인되었습니다.`);
-    });
-  };
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <input 
+              type="text" 
+              placeholder="ID" 
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+            />
+          </div>
+          <div>
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+            />
+          </div>
+          
+          {tab === 'create' && (
+            <div className="animate-fade-in">
+              <input 
+                type="text" 
+                placeholder="Name" 
+                className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+              />
+            </div>
+          )}
 
-  const rejectAccount = (acc) => {
-    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts', acc._docId));
-    showToast(`"${acc.name}" 요청을 거절했습니다.`);
-  };
+          {tab === 'login' && (
+            <div className="flex items-center space-x-2 pt-1">
+              <input 
+                type="checkbox" 
+                id="remember" 
+                checked={remember}
+                onChange={() => setRemember(!remember)}
+                className="w-4 h-4 rounded border-gray-300 text-gray-800 focus:ring-gray-800 accent-gray-800 cursor-pointer"
+              />
+              <label htmlFor="remember" className="text-xs text-gray-500 cursor-pointer select-none">로그인 기억하기</label>
+            </div>
+          )}
 
-  const openAddModal = () => {
-    if (isGuest) { showToast('게스트는 추가할 수 없습니다.'); return; }
-    setEditingId(null);
-    setModalData({ name: '', type: 'BAR', status: '보관중', os: '', serial: '', user: '', maker: 'Samsung', usim: '', adid: '' });
-    setIsModalOpen(true);
-  };
+          <div className="pt-4 space-y-3">
+            <button 
+              type="submit" 
+              className="w-full bg-gray-800 text-white text-sm font-medium py-3 rounded-xl hover:bg-gray-900 transition-colors shadow-lg shadow-gray-200"
+            >
+              {tab === 'login' ? '로그인' : '계정 생성'}
+            </button>
+            <button 
+              type="button" 
+              onClick={handleGuest}
+              className="w-full bg-white text-gray-600 border border-gray-200 text-sm font-medium py-3 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              게스트로 시작 (Viewer)
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      {/* Decorative background shapes */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gray-300/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse" style={{ animationDelay: '2s'}}></div>
+    </div>
+  );
+};
 
-  const editDevice = () => {
-    if (!selectedId) return;
-    const d = devices.find(x => x.id === selectedId);
-    setEditingId(selectedId);
-    setModalData({ ...d });
-    setIsModalOpen(true);
-  };
+const TransitionLoading = ({ title, onComplete }) => {
+  useEffect(() => {
+    // 기능 이동 시 로딩은 피로도를 줄이기 위해 짧게(1.5초) 조정
+    const timer = setTimeout(onComplete, 1500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
 
-  const saveDevice = () => {
-    if(!modalData.name.trim()){ showToast('시료 명을 입력하세요.'); return; }
-    const payload = { ...modalData };
-    if(!payload.maker) payload.maker = 'Samsung';
+  return (
+    <div className="w-screen h-screen bg-[#f8f9fa] flex flex-col items-center justify-center animate-simple-fade absolute inset-0 z-50">
+      <div className="w-16 h-16 relative">
+        <div className="absolute inset-0 border-2 border-gray-200 rounded-full"></div>
+        <div className="absolute inset-0 border-2 border-gray-800 rounded-full border-t-transparent animate-spin"></div>
+      </div>
+      <p className="mt-6 text-sm text-gray-500 tracking-widest uppercase animate-pulse">{title} 로딩중...</p>
+    </div>
+  );
+};
 
-    if(editingId) {
-        updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(editingId)), payload)
-        .then(() => showToast(`${payload.name} 수정 완료`))
-        .catch(() => showToast('수정 권한 오류'));
-    } else {
-        const newRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'devices'));
-        setDoc(newRef, payload)
-        .then(() => showToast(`${payload.name} 등록 완료`))
-        .catch(() => showToast('등록 권한 오류'));
-    }
-    setIsModalOpen(false);
-  };
+const FunctionalBoard = ({ user, onNavigate, onLogout }) => {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const onlineUsersCount = 12; // Mock data
 
-  const triggerDelete = () => {
-    setIsDeleteModalOpen(true);
-  };
+  return (
+    <div className="w-screen h-screen bg-[#f8f9fa] flex flex-col animate-simple-fade">
+      {/* Cinematic Header */}
+      <header className="h-20 px-8 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-gray-100">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
+            <MonitorSmartphone className="w-5 h-5 text-gray-800" strokeWidth={1.5} />
+          </div>
+          <span className="text-xl font-medium tracking-wider text-gray-800">QA BASE</span>
+        </div>
 
-  const confirmDelete = () => {
-    const d = devices.find(x => x.id === selectedId);
-    deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(selectedId)))
-    .then(() => {
-        setIsDetailOpen(false);
-        setSelectedId(null);
-        showToast(`${d.name} 삭제 완료`);
-        setIsDeleteModalOpen(false);
-    });
-  };
+        <div className="flex items-center space-x-6">
+          {/* Online Users Badge */}
+          <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm hover-breath cursor-default">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <Users className="w-4 h-4 text-gray-500" />
+            <span className="text-xs font-medium text-gray-600">{onlineUsersCount}명 접속중</span>
+          </div>
 
-  const changeStatus = (newStatus) => {
-    if(isGuest){ showToast('게스트는 수정할 수 없습니다.'); return; }
-    if(!selectedId) return;
-    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(selectedId)), { status: newStatus })
-    .then(() => showToast(`상태 변경: ${newStatus}`));
-  };
+          {/* Admin Settings Icon (Only for Admin) */}
+          {user.role === 'admin' && (
+            <button className="p-2 text-gray-400 hover:text-gray-800 transition-colors hover-breath rounded-full">
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
 
-  const filteredDevices = devices.filter(d => {
-    const sm = currentFilter === 'all' || d.status === currentFilter;
-    const tm = currentTypeFilter === 'all' || d.type === currentTypeFilter;
-    const qm = !searchQuery || d.name.toLowerCase().includes(searchQuery) || (d.serial && d.serial.toLowerCase().includes(searchQuery)) || (d.user && d.user.toLowerCase().includes(searchQuery));
-    return sm && tm && qm;
-  });
-
-  const stats = {
-    total: devices.length,
-    inUse: devices.filter(d => d.status === '사용중').length,
-    lent: devices.filter(d => d.status === '대여중').length,
-    stored: devices.filter(d => d.status === '보관중').length,
-  };
-
-  const getBadge = (t) => <span className="type-tag">{t}</span>;
-  const getStatus = (s) => {
-    const c = s==='사용중'?'inuse':s==='대여중'?'lent':'stored';
-    const dot = s==='사용중'?'dot-inuse':s==='대여중'?'dot-lent':'dot-stored';
-    return <span className={`status-pill pill-${c}`}><span className={`col-dot ${dot}`} style={{width:'5px',height:'5px',flexShrink:0}}></span>{s}</span>;
-  };
-  const getUser = (d) => {
-    if(!d.user) return <span className="maker-tag">—</span>;
-    return <div className="user-chip"><div className="chip-av">{d.user.charAt(0)}</div><span className="chip-name">{d.user}</span></div>;
-  };
-
-  const selectedDeviceObj = devices.find(x => x.id === selectedId);
-
-  if (appState === 'login') {
-    return (
-      <>
-        <style dangerouslySetInnerHTML={{ __html: cssText }} />
-        <div className="grid-bg"></div>
-        <div id="login-screen">
-          <button className="btn-install" onClick={handleInstallClick}>INSTALL APP</button>
-          <div className="login-wrap">
-            <div className="gear-scene">
-              <svg width="120" height="80" viewBox="0 0 120 80" overflow="visible">
-                <g className="gear-left-g" transform="translate(18,60)">
-                  <circle r="14" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5"/>
-                  <circle r="4" fill="rgba(255,255,255,0.1)"/>
-                  <g fill="rgba(255,255,255,0.1)" stroke="none">
-                    <rect x="-3" y="-21" width="6" height="8" rx="2"/>
-                    <rect x="-3" y="13" width="6" height="8" rx="2"/>
-                    <rect x="13" y="-3" width="8" height="6" rx="2"/>
-                    <rect x="-21" y="-3" width="8" height="6" rx="2"/>
-                    <rect x="7" y="-19" width="6" height="8" rx="2" transform="rotate(45)"/>
-                    <rect x="-13" y="-19" width="6" height="8" rx="2" transform="rotate(-45)"/>
-                    <rect x="7" y="11" width="6" height="8" rx="2" transform="rotate(-45)"/>
-                    <rect x="-13" y="11" width="6" height="8" rx="2" transform="rotate(45)"/>
-                  </g>
-                </g>
-                <g className="gear-center-g" transform="translate(60,60)">
-                  <circle r="22" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="7"/>
-                  <circle r="7" fill="rgba(255,255,255,0.18)"/>
-                  <g fill="rgba(255,255,255,0.18)">
-                    <rect x="-4.5" y="-32" width="9" height="12" rx="2.5"/>
-                    <rect x="-4.5" y="20" width="9" height="12" rx="2.5"/>
-                    <rect x="20" y="-4.5" width="12" height="9" rx="2.5"/>
-                    <rect x="-32" y="-4.5" width="12" height="9" rx="2.5"/>
-                    <rect x="11" y="-29" width="9" height="12" rx="2.5" transform="rotate(45)"/>
-                    <rect x="-20" y="-29" width="9" height="12" rx="2.5" transform="rotate(-45)"/>
-                    <rect x="11" y="17" width="9" height="12" rx="2.5" transform="rotate(-45)"/>
-                    <rect x="-20" y="17" width="9" height="12" rx="2.5" transform="rotate(45)"/>
-                  </g>
-                </g>
-                <g className="gear-right-g" transform="translate(102,60)">
-                  <circle r="14" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5"/>
-                  <circle r="4" fill="rgba(255,255,255,0.1)"/>
-                  <g fill="rgba(255,255,255,0.1)">
-                    <rect x="-3" y="-21" width="6" height="8" rx="2"/>
-                    <rect x="-3" y="13" width="6" height="8" rx="2"/>
-                    <rect x="13" y="-3" width="8" height="6" rx="2"/>
-                    <rect x="-21" y="-3" width="8" height="6" rx="2"/>
-                    <rect x="7" y="-19" width="6" height="8" rx="2" transform="rotate(45)"/>
-                    <rect x="-13" y="-19" width="6" height="8" rx="2" transform="rotate(-45)"/>
-                    <rect x="7" y="11" width="6" height="8" rx="2" transform="rotate(-45)"/>
-                    <rect x="-13" y="11" width="6" height="8" rx="2" transform="rotate(45)"/>
-                  </g>
-                </g>
-              </svg>
+          {/* Profile */}
+          <div className="relative">
+            <div 
+              className="flex items-center space-x-3 cursor-pointer hover-breath p-1 pr-3 bg-white rounded-full border border-gray-100 shadow-sm"
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+            >
+              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-xs font-medium">
+                {user.name.charAt(0)}
+              </div>
+              <span className="text-sm font-medium text-gray-700">{user.name}</span>
             </div>
 
-            <div className="login-card">
-              <div className="login-brand">
-                <div style={{display:'flex',justifyContent:'center',marginBottom:'12px'}}>
-                  <img className="login-mark" src={APP_ICON_SVG} alt="Q Base Icon" />
-                </div>
-                <div className="login-title">Q BASE</div>
-                <div className="login-sub">QA Management System</div>
+            {/* Profile Dropdown */}
+            {showProfileMenu && (
+              <div className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-gray-100 py-2 animate-fade-in z-50">
+                <button className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex items-center">
+                  <User className="w-4 h-4 mr-3" /> 프로필 수정
+                </button>
+                <div className="h-px bg-gray-100 my-1"></div>
+                <button 
+                  onClick={onLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors flex items-center"
+                >
+                  <LogOut className="w-4 h-4 mr-3" /> 로그아웃
+                </button>
               </div>
+            )}
+          </div>
+        </div>
+      </header>
 
-              <div className="login-tabs">
-                <button className={`login-tab ${loginTab==='login'?'active':''}`} onClick={()=>setLoginTab('login')}>LOGIN</button>
-                <button className={`login-tab ${loginTab==='create'?'active':''}`} onClick={()=>setLoginTab('create')}>CREATE</button>
+      {/* Board Content */}
+      <main className="flex-1 overflow-auto p-12 flex flex-col items-center">
+        <div className="w-full max-w-5xl">
+          <h2 className="text-3xl font-light text-gray-800 mb-2">Functional Board</h2>
+          <p className="text-sm text-gray-500 mb-10">원하는 업무 기지를 선택하세요.</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Devices Card */}
+            <div 
+              onClick={() => onNavigate('dashboard')}
+              className="bg-white rounded-3xl p-8 cursor-pointer border border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover-breath group"
+            >
+              <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-gray-800 transition-colors duration-500">
+                <Server className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors duration-500" strokeWidth={1.5} />
               </div>
-
-              {loginTab === 'login' && (
-                <div>
-                  <div className="lf-group">
-                    <label className="lf-label">ID</label>
-                    <input className="lf-input" type="text" placeholder="아이디" autoComplete="off" value={loginId} onChange={e=>setLoginId(e.target.value)} />
-                  </div>
-                  <div className="lf-group">
-                    <label className="lf-label">Password</label>
-                    <input className="lf-input" type="password" placeholder="비밀번호" value={loginPw} onChange={e=>setLoginPw(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')handleLogin()}}/>
-                  </div>
-                  <div className={`login-error ${loginError?'show':''}`}>{loginError}</div>
-                  <button className="btn-login" onClick={handleLogin}>LOGIN</button>
-                  <div className="login-divider">OR</div>
-                  <button className="btn-guest" onClick={handleGuestLogin}>CONTINUE AS GUEST  ·  VIEW ONLY</button>
-
-                  {pendingAccounts.length > 0 && (
-                    <div className="pending-section show">
-                      <div className="pending-label">// Pending Approvals</div>
-                      <div>
-                        {pendingAccounts.map(a => (
-                          <div key={a._docId} className="pending-item">
-                            <div><div className="pending-name">{a.name}</div><div className="pending-id">{a.id}</div></div>
-                            <div className="pending-acts">
-                              <button className="btn-approve" onClick={()=>approveAccount(a)}>APPROVE</button>
-                              <button className="btn-reject" onClick={()=>rejectAccount(a)}>REJECT</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {loginTab === 'create' && (
-                <div>
-                  <div className="lf-group">
-                    <label className="lf-label">Name</label>
-                    <input className="lf-input" type="text" placeholder="홍길동" value={createName} onChange={e=>setCreateName(e.target.value)}/>
-                  </div>
-                  <div className="lf-group">
-                    <label className="lf-label">ID</label>
-                    <input className="lf-input" type="text" placeholder="사용할 아이디" autoComplete="off" value={createId} onChange={e=>setCreateId(e.target.value)}/>
-                  </div>
-                  <div className="lf-group">
-                    <label className="lf-label">Password</label>
-                    <input className="lf-input" type="password" placeholder="비밀번호" value={createPw} onChange={e=>setCreatePw(e.target.value)}/>
-                  </div>
-                  <div className={`login-error ${createError?'show':''}`}>{createError}</div>
-                  <button className="btn-login" onClick={handleCreateAccount}>REQUEST ACCOUNT</button>
-                  <div className="create-hint">Requires admin approval before login</div>
-                </div>
-              )}
+              <h3 className="text-xl font-medium text-gray-800 mb-2">Devices</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                QA 검증용 시료(단말기) 현황을 조회하고<br/>상태 및 대여 현황을 관리합니다.
+              </p>
+            </div>
+            
+            {/* Disabled Card Example */}
+            <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 opacity-60">
+              <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
+                <LayoutDashboard className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-medium text-gray-500 mb-2">Test Cases</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">준비중인 기능입니다.</p>
             </div>
           </div>
         </div>
-        
-        <div className="toast-container">
-          {toasts.map(t => <div key={t.id} className={`toast ${t.removing?'removing':''}`}><span style={{color:'var(--t2)',fontSize:'14px'}}>◆</span><span>{t.msg}</span></div>)}
-        </div>
-      </>
-    );
-  }
+      </main>
+    </div>
+  );
+};
 
-  const renderKanbanCol = (statusName, colId, dotClass) => {
-    const items = filteredDevices.filter(d => d.status === statusName);
-    return (
-      <div className="kanban-col">
-        <div className="kanban-header">
-          <div className="col-title-wrap"><div className={`col-dot ${dotClass}`}></div><div className="col-title">{statusName}</div></div>
-          <div className="col-cnt">{items.length}</div>
-        </div>
-        <div className="kanban-cards">
-          {items.length === 0 ? (
-            <div className="empty-state"><div className="empty-icon">○</div><div className="empty-text">No Devices</div></div>
-          ) : items.map(d => (
-            <div key={d.id} className={`device-card ${selectedId===d.id?'selected':''}`} onClick={()=>{setSelectedId(d.id); setIsDetailOpen(true);}}>
-              <div className="card-top"><div className="card-name">{d.name}</div>{getBadge(d.type)}</div>
-              <div className="card-meta">
-                <div className="meta-line"><span className="mk">OS</span><span className="mv">{d.os}</span></div>
-                <div className="meta-line"><span className="mk">S/N</span><span className="mv">{d.serial}</span></div>
+const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
+  const columns = [
+    { id: '보관중', title: '보관중' },
+    { id: '사용중', title: '사용중' },
+    { id: '대여중', title: '대여중' }
+  ];
+
+  const handleDragStart = (e, deviceId) => {
+    e.dataTransfer.setData('deviceId', deviceId);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Necessary to allow dropping
+  };
+
+  const handleDrop = (e, targetStatus) => {
+    e.preventDefault();
+    if (user.role === 'viewer') return; // Guest cannot modify
+
+    const deviceId = e.dataTransfer.getData('deviceId');
+    const device = devices.find(d => d.id === deviceId);
+    
+    if (!device || device.status === targetStatus) return;
+
+    if (targetStatus === '보관중') {
+      // 보관중으로 이동 시 대여자 정보 초기화
+      setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, status: targetStatus, renter: '' } : d));
+    } else {
+      // 사용중/대여중으로 이동 시 모달 호출
+      setRentModal({ isOpen: true, deviceId, targetStatus });
+    }
+  };
+
+  return (
+    <div className="flex h-full gap-6 w-full animate-fade-in pb-4 overflow-x-auto no-scrollbar">
+      {columns.map(col => (
+        <div 
+          key={col.id} 
+          className="flex-1 min-w-[300px] bg-gray-50/50 rounded-2xl p-4 flex flex-col border border-gray-100"
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, col.id)}
+        >
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="font-medium text-gray-700">{col.title}</h3>
+            <span className="bg-white text-xs px-2 py-1 rounded-full shadow-sm text-gray-500 border border-gray-100">
+              {devices.filter(d => d.status === col.id).length}
+            </span>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto space-y-3 no-scrollbar pb-2">
+            {devices.filter(d => d.status === col.id).map(device => (
+              <div 
+                key={device.id}
+                draggable={user.role !== 'viewer'}
+                onDragStart={(e) => handleDragStart(e, device.id)}
+                className={`bg-white p-4 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-xs font-semibold text-gray-400 tracking-wider">{device.manufacturer}</span>
+                  <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100">{device.type}</span>
+                </div>
+                <h4 className="text-sm font-medium text-gray-800 mb-3">{device.name}</h4>
+                <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
+                  <span>{device.os}</span>
+                  {device.renter ? (
+                    <span className="flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded-md">
+                      <User className="w-3 h-3 mr-1" /> {device.renter}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 italic">미할당</span>
+                  )}
+                </div>
               </div>
-              <div className="card-foot">{getUser(d)}<span className="maker-tag">{d.maker}</span></div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+      ))}
+    </div>
+  );
+};
+
+const ListView = ({ devices }) => {
+  return (
+    <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] overflow-hidden animate-fade-in">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="bg-gray-50/50 border-b border-gray-100">
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">상태</th>
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">디바이스명</th>
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">제조사</th>
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">OS</th>
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">형태</th>
+            <th className="px-6 py-4 text-xs font-medium text-gray-500 tracking-wider">사용/대여자</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devices.map(device => (
+            <tr key={device.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer group">
+              <td className="px-6 py-4">
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                  device.status === '보관중' ? 'bg-gray-100 text-gray-600' :
+                  device.status === '사용중' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                }`}>
+                  {device.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-800">{device.name}</td>
+              <td className="px-6 py-4 text-sm text-gray-500">{device.manufacturer}</td>
+              <td className="px-6 py-4 text-sm text-gray-500">{device.os}</td>
+              <td className="px-6 py-4 text-sm text-gray-500">{device.type}</td>
+              <td className="px-6 py-4 text-sm text-gray-500">
+                {device.renter || '-'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [viewType, setViewType] = useState('kanban'); // 'kanban' or 'list'
+  const [devices, setDevices] = useState(INITIAL_DEVICES);
+  const [rentModal, setRentModal] = useState({ isOpen: false, deviceId: null, targetStatus: '' });
+  const [renterName, setRenterName] = useState('');
+
+  // Filters
+  const [osFilter, setOsFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All');
+
+  // Computed data
+  const filteredDevices = devices.filter(d => {
+    if (osFilter !== 'All' && d.os !== osFilter) return false;
+    if (statusFilter !== 'All' && d.status !== statusFilter) return false;
+    if (typeFilter !== 'All' && d.type !== typeFilter) return false;
+    return true;
+  });
+
+  const summary = {
+    total: filteredDevices.length,
+    storage: filteredDevices.filter(d => d.status === '보관중').length,
+    inUse: filteredDevices.filter(d => d.status === '사용중').length,
+    rented: filteredDevices.filter(d => d.status === '대여중').length,
+  };
+
+  const handleRentSubmit = (e) => {
+    e.preventDefault();
+    if (!renterName.trim()) return;
+    
+    setDevices(prev => prev.map(d => 
+      d.id === rentModal.deviceId 
+        ? { ...d, status: rentModal.targetStatus, renter: renterName }
+        : d
+    ));
+    setRentModal({ isOpen: false, deviceId: null, targetStatus: '' });
+    setRenterName('');
+  };
+
+  return (
+    <div className="w-screen h-screen bg-[#f8f9fa] flex flex-col overflow-hidden animate-simple-fade">
+      {/* Header */}
+      <header className="h-16 px-6 flex justify-between items-center bg-white border-b border-gray-100 z-20 shrink-0 shadow-sm relative">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
+            <MonitorSmartphone className="w-4 h-4 text-gray-800" strokeWidth={2} />
+          </div>
+          <span className="text-lg font-medium tracking-wide text-gray-800">QA BASE</span>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 mr-4">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            <span className="text-xs text-gray-500">12</span>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 hover-breath">
+            <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-white text-[10px] font-medium">
+              {user.name.charAt(0)}
+            </div>
+            <span className="text-xs font-medium text-gray-700">{user.name}</span>
+          </div>
+
+          <div className="h-4 w-px bg-gray-200"></div>
+
+          <button onClick={onLogout} className="text-gray-400 hover:text-gray-800 transition-colors p-1.5 hover-breath rounded-md">
+            <LogOut className="w-4 h-4" />
+          </button>
+          <button onClick={onQuit} className="text-gray-400 hover:text-red-500 transition-colors p-1.5 hover-breath rounded-md">
+            <Power className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* Main Body with Sidebar */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Sidebar */}
+        <aside 
+          className={`bg-white border-r border-gray-100 transition-all duration-300 ease-in-out flex flex-col z-10 ${
+            sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'
+          }`}
+        >
+          <div className="p-4 space-y-1 w-64">
+            <div className="text-xs font-semibold text-gray-400 tracking-wider mb-4 px-3 mt-2">MENU</div>
+            <button 
+              onClick={() => onNavigate('board')}
+              className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span className="text-sm font-medium">기능 보드 이동</span>
+            </button>
+            <div className="h-px bg-gray-100 my-2 mx-3"></div>
+            <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-900 font-medium">
+              <Server className="w-4 h-4 text-gray-700" />
+              <span className="text-sm">대시보드 (Devices)</span>
+            </button>
+            {/* Note: Android/iOS merged into dashboard via filters per recommendation, but keeping UI elements if needed */}
+            <button 
+              onClick={() => { setOsFilter('Android'); if(!sidebarOpen) setSidebarOpen(true); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${osFilter === 'Android' ? 'bg-green-50/50 text-green-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                <span className="text-sm font-medium">Android</span>
+              </div>
+            </button>
+            <button 
+              onClick={() => { setOsFilter('iOS'); if(!sidebarOpen) setSidebarOpen(true); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${osFilter === 'iOS' ? 'bg-blue-50/50 text-blue-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                <span className="text-sm font-medium">iOS</span>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        {/* Sidebar Toggle Button */}
+        <button 
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className={`absolute top-6 z-20 bg-white border border-gray-200 shadow-sm rounded-full p-1.5 text-gray-500 hover:text-gray-800 transition-all duration-300 ${
+            sidebarOpen ? 'left-[244px]' : 'left-4'
+          }`}
+        >
+          {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+        </button>
+
+        {/* Content Area */}
+        <main className={`flex-1 overflow-hidden flex flex-col p-8 transition-all duration-300 ${!sidebarOpen ? 'ml-12' : ''}`}>
+          
+          {/* Header & Filters */}
+          <div className="flex justify-between items-end mb-8 shrink-0">
+            <div>
+              <div className="flex items-center space-x-3 mb-1">
+                <h1 className="text-2xl font-semibold text-gray-800">
+                  {osFilter === 'All' ? '전체 디바이스' : osFilter}
+                </h1>
+                {user.role === 'viewer' && (
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded border border-gray-200 uppercase tracking-wider">Read Only</span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">테스트 단말기의 상태를 모니터링하고 관리합니다.</p>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {/* View Toggle */}
+              <div className="bg-white border border-gray-200 rounded-lg p-1 flex">
+                <button 
+                  onClick={() => setViewType('kanban')}
+                  className={`p-1.5 rounded-md transition-colors ${viewType === 'kanban' ? 'bg-gray-100 text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setViewType('list')}
+                  className={`p-1.5 rounded-md transition-colors ${viewType === 'list' ? 'bg-gray-100 text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+
+              {user.role !== 'viewer' && (
+                <button className="bg-gray-800 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-900 transition-colors shadow-md shadow-gray-200 flex items-center hover-breath">
+                  <Plus className="w-4 h-4 mr-1.5" /> 추가
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Stats & Filter Bar */}
+          <div className="flex justify-between items-center bg-white p-2 pl-6 rounded-2xl shadow-sm border border-gray-100 mb-6 shrink-0">
+            {/* Stats */}
+            <div className="flex space-x-6">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total</span>
+                <span className="text-lg font-medium text-gray-800">{summary.total}</span>
+              </div>
+              <div className="w-px bg-gray-100 my-1"></div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">사용중</span>
+                <span className="text-lg font-medium text-green-600">{summary.inUse}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">대여중</span>
+                <span className="text-lg font-medium text-blue-600">{summary.rented}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">보관중</span>
+                <span className="text-lg font-medium text-gray-600">{summary.storage}</span>
+              </div>
+            </div>
+
+            {/* In-bar Filters */}
+            <div className="flex items-center space-x-2 bg-gray-50/50 p-1.5 rounded-xl border border-gray-50">
+              <Filter className="w-3.5 h-3.5 text-gray-400 ml-2" />
+              <select 
+                value={osFilter} onChange={(e) => setOsFilter(e.target.value)}
+                className="bg-transparent border-none text-xs text-gray-600 focus:ring-0 cursor-pointer py-1"
+              >
+                <option value="All">OS 전체</option>
+                <option value="Android">Android</option>
+                <option value="iOS">iOS</option>
+              </select>
+              <div className="w-px h-3 bg-gray-200"></div>
+              <select 
+                value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
+                className="bg-transparent border-none text-xs text-gray-600 focus:ring-0 cursor-pointer py-1"
+              >
+                <option value="All">형태 전체</option>
+                <option value="Fold">폴드</option>
+                <option value="Flip">플립</option>
+                <option value="Bar">바</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Dynamic Content Area (Kanban / List) */}
+          <div className="flex-1 overflow-hidden">
+             {viewType === 'kanban' ? (
+               <KanbanBoard devices={filteredDevices} setDevices={setDevices} user={user} setRentModal={setRentModal} />
+             ) : (
+               <div className="h-full overflow-auto no-scrollbar">
+                 <ListView devices={filteredDevices} />
+               </div>
+             )}
+          </div>
+        </main>
       </div>
-    );
+
+      {/* Renter Input Modal */}
+      {rentModal.isOpen && (
+        <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-[320px] transform transition-all border border-gray-100">
+            <h3 className="text-lg font-medium text-gray-800 mb-2">
+              {rentModal.targetStatus === '사용중' ? '사용자 정보 입력' : '대여자 정보 입력'}
+            </h3>
+            <p className="text-xs text-gray-500 mb-5">상태를 변경하려면 이름을 입력해주세요.</p>
+            <form onSubmit={handleRentSubmit}>
+              <input 
+                autoFocus
+                type="text" 
+                placeholder="이름 (예: 홍길동)" 
+                value={renterName}
+                onChange={(e) => setRenterName(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-gray-400 focus:bg-white transition-all mb-6"
+              />
+              <div className="flex space-x-3">
+                <button 
+                  type="button" 
+                  onClick={() => setRentModal({ isOpen: false, deviceId: null, targetStatus: '' })}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  취소
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-xl hover:bg-gray-900 transition-colors shadow-lg shadow-gray-200"
+                >
+                  확인
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function App() {
+  // Screen States: 'splash', 'login', 'loadingBoard', 'board', 'loadingDash', 'dashboard'
+  const [screen, setScreen] = useState('splash');
+  const [user, setUser] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Styles Injection (For preview environment)
+  useEffect(() => {
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = globalStyles;
+    document.head.appendChild(styleSheet);
+    return () => { document.head.removeChild(styleSheet); };
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+    setScreen('loadingBoard');
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
   };
 
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: cssText }} />
-      <div className="grid-bg"></div>
-      <div id="app" className="visible">
-        
-        <header className="topbar">
-          <div className="topbar-inner">
-            <div className="logo">
-              <img className="logo-mark" src={APP_ICON_SVG} alt="Q Base Icon" />
-              <div>
-                <div className="logo-wordmark">Q BASE</div>
-                <div className="logo-sub">QA Management System</div>
-              </div>
-            </div>
+      {/* Toast Notification */}
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
 
-            {activePage === 'devices' && (
-              <div className="view-switcher">
-                <button className={`vsw ${currentView==='kanban'?'active':''}`} onClick={()=>setCurrentView('kanban')}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="11" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/></svg>
-                  KANBAN
-                </button>
-                <button className={`vsw ${currentView==='table'?'active':''}`} onClick={()=>setCurrentView('table')}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                  LIST
-                </button>
-              </div>
-            )}
-
-            <div className="topbar-right">
-              <div className="tb-stat">
-                <div className="pulse-dot"></div>
-                <span>대여 중 {stats.lent}대</span>
-              </div>
-              <div className="user-pill" onClick={()=>currentUser?.role==='admin'&&pendingAccounts.length>0&&showToast(`대기 중인 계정 요청 ${pendingAccounts.length}건이 있습니다.`)}>
-                <div className="user-av">{currentUser?.name?.charAt(0).toUpperCase()}</div>
-                <div>
-                  <div className="user-info-name">{currentUser?.name}</div>
-                  <div className="user-info-role">{isGuest ? 'GUEST' : currentUser?.role.toUpperCase()}</div>
-                </div>
-              </div>
-              {!isGuest && activePage === 'devices' && (
-                <button className="btn-add" onClick={openAddModal}>+ ADD</button>
-              )}
-              <button className="btn-logout" onClick={handleLogout}>LOGOUT</button>
-            </div>
-          </div>
-        </header>
-
-        <div className="app-body">
-          <nav className="sidebar">
-            <div className="sb-section-label">메뉴</div>
-            <div className={`sb-item ${activePage==='dashboard'?'active':''}`} onClick={()=>setActivePage('dashboard')}>
-              <svg className="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-              대시보드
-            </div>
-            <div className={`sb-item ${activePage==='devices'?'active':''}`} onClick={()=>setActivePage('devices')}>
-              <svg className="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-              Devices
-            </div>
-            <div className="sb-divider"></div>
-            <div className="sb-section-label">시스템</div>
-            <div className="sb-item" style={{cursor:'default',opacity:.5}}>
-              <svg className="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-              더 많은 메뉴 준비 중
-            </div>
-          </nav>
-
-          <div className="page-content">
-            {activePage === 'dashboard' && (
-              <div className="dash-inner page-in">
-                <div className="dash-greeting">
-                  <div className="dash-greet-main">안녕하세요, {currentUser?.name}님</div>
-                  <div className="dash-greet-sub">{`// ${new Date().getFullYear()}.${String(new Date().getMonth()+1).padStart(2,'0')}.${String(new Date().getDate()).padStart(2,'0')} · Q BASE`}</div>
-                </div>
-
-                <div className="dash-cards">
-                  <div className="dash-card" onClick={()=>setActivePage('devices')}>
-                    <div className="dash-card-icon">📱</div>
-                    <div className="dash-card-title">Devices</div>
-                    <div className="dash-card-desc">시료 현황을 확인하고 대여·사용·보관 상태를 관리합니다.</div>
-                    <div className="dash-card-badge"><span className="pulse-dot" style={{width:'6px',height:'6px'}}></span><span>{stats.total}대 등록됨</span></div>
-                    <div className="dash-card-arrow">→</div>
-                  </div>
-                  <div className="dash-card" style={{opacity:.45,cursor:'default'}}>
-                    <div className="dash-card-icon">📋</div>
-                    <div className="dash-card-title">테스트 케이스</div>
-                    <div className="dash-card-desc">테스트 케이스와 실행 결과를 관리합니다.</div>
-                    <div className="dash-card-badge">준비 중</div>
-                  </div>
-                  <div className="dash-card" style={{opacity:.45,cursor:'default'}}>
-                    <div className="dash-card-icon">🐞</div>
-                    <div className="dash-card-title">버그 트래커</div>
-                    <div className="dash-card-desc">발견된 버그를 등록하고 이슈를 추적합니다.</div>
-                    <div className="dash-card-badge">준비 중</div>
-                  </div>
-                </div>
-
-                <div className="stat-row">
-                  <div className="stat-card" onClick={()=>{setActivePage('devices');setCurrentFilter('all');}}>
-                    <div className="stat-num">{stats.total}</div>
-                    <div className="stat-lbl">전체 시료</div>
-                    <div className="stat-bar-t"><div className="stat-bar-f" style={{width:'100%'}}></div></div>
-                  </div>
-                  <div className="stat-card" onClick={()=>{setActivePage('devices');setCurrentFilter('사용중');}}>
-                    <div className="stat-num">{stats.inUse}</div>
-                    <div className="stat-lbl">사용 중</div>
-                    <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.inUse/stats.total*100)}%` : '0%'}}></div></div>
-                  </div>
-                  <div className="stat-card" onClick={()=>{setActivePage('devices');setCurrentFilter('대여중');}}>
-                    <div className="stat-num">{stats.lent}</div>
-                    <div className="stat-lbl">대여 중</div>
-                    <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.lent/stats.total*100)}%` : '0%'}}></div></div>
-                  </div>
-                  <div className="stat-card" onClick={()=>{setActivePage('devices');setCurrentFilter('보관중');}}>
-                    <div className="stat-num">{stats.stored}</div>
-                    <div className="stat-lbl">보관 중</div>
-                    <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.stored/stats.total*100)}%` : '0%'}}></div></div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activePage === 'devices' && (
-              <main className="main">
-                <div className="main-inner page-in">
-                  {isGuest && (
-                    <div className="guest-banner">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                      GUEST MODE — 조회 전용입니다. 데이터 수정·추가·삭제는 불가합니다.
-                    </div>
-                  )}
-
-                  <div className="controls-row">
-                    <div className="search-box">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                      <input type="text" placeholder="이름 · 시리얼 · 사용자 검색" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} />
-                    </div>
-                    <div style={{display:'flex',gap:'16px',alignItems:'center',flexWrap:'wrap'}}>
-                      <div className="chips-group">
-                        <span className="chips-label">상태</span>
-                        <div className={`chip ${currentFilter==='all'?'active':''}`} onClick={()=>setCurrentFilter('all')}>전체</div>
-                        <div className={`chip ${currentFilter==='사용중'?'active':''}`} onClick={()=>setCurrentFilter('사용중')}>사용중</div>
-                        <div className={`chip ${currentFilter==='대여중'?'active':''}`} onClick={()=>setCurrentFilter('대여중')}>대여중</div>
-                        <div className={`chip ${currentFilter==='보관중'?'active':''}`} onClick={()=>setCurrentFilter('보관중')}>보관중</div>
-                      </div>
-                      <div className="chips-group">
-                        <span className="chips-label">형태</span>
-                        <div className={`chip ${currentTypeFilter==='all'?'active':''}`} onClick={()=>setCurrentTypeFilter('all')}>전체</div>
-                        <div className={`chip ${currentTypeFilter==='FOLD'?'active':''}`} onClick={()=>setCurrentTypeFilter('FOLD')}>FOLD</div>
-                        <div className={`chip ${currentTypeFilter==='FLIP'?'active':''}`} onClick={()=>setCurrentTypeFilter('FLIP')}>FLIP</div>
-                        <div className={`chip ${currentTypeFilter==='BAR'?'active':''}`} onClick={()=>setCurrentTypeFilter('BAR')}>BAR</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="stat-row">
-                    <div className="stat-card" onClick={()=>setCurrentFilter('all')}>
-                      <div className="stat-num">{stats.total}</div>
-                      <div className="stat-lbl">전체 시료</div>
-                      <div className="stat-bar-t"><div className="stat-bar-f" style={{width:'100%'}}></div></div>
-                    </div>
-                    <div className="stat-card" onClick={()=>setCurrentFilter('사용중')}>
-                      <div className="stat-num">{stats.inUse}</div>
-                      <div className="stat-lbl">사용 중</div>
-                      <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.inUse/stats.total*100)}%` : '0%'}}></div></div>
-                    </div>
-                    <div className="stat-card" onClick={()=>setCurrentFilter('대여중')}>
-                      <div className="stat-num">{stats.lent}</div>
-                      <div className="stat-lbl">대여 중</div>
-                      <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.lent/stats.total*100)}%` : '0%'}}></div></div>
-                    </div>
-                    <div className="stat-card" onClick={()=>setCurrentFilter('보관중')}>
-                      <div className="stat-num">{stats.stored}</div>
-                      <div className="stat-lbl">보관 중</div>
-                      <div className="stat-bar-t"><div className="stat-bar-f" style={{width: stats.total ? `${(stats.stored/stats.total*100)}%` : '0%'}}></div></div>
-                    </div>
-                  </div>
-
-                  {currentView === 'kanban' && (
-                    <div className="kanban-board">
-                      {renderKanbanCol('보관중', 'stored', 'dot-stored')}
-                      {renderKanbanCol('사용중', 'inuse', 'dot-inuse')}
-                      {renderKanbanCol('대여중', 'lent', 'dot-lent')}
-                    </div>
-                  )}
-
-                  {currentView === 'table' && (
-                    <div className="table-wrap">
-                      <table className="data-table">
-                        <thead>
-                          <tr><th>시료 명</th><th>형태</th><th>상태</th><th>OS</th><th>시리얼 번호</th><th>대여/사용자</th><th>제조사</th></tr>
-                        </thead>
-                        <tbody>
-                          {filteredDevices.map(d => (
-                            <tr key={d.id} className={selectedId === d.id ? 'selected' : ''} onClick={()=>{setSelectedId(d.id); setIsDetailOpen(true);}}>
-                              <td className="td-name">{d.name}</td>
-                              <td>{getBadge(d.type)}</td>
-                              <td>{getStatus(d.status)}</td>
-                              <td className="td-mono">{d.os}</td>
-                              <td className="td-dim">{d.serial}</td>
-                              <td>{d.user ? getUser(d) : <span className="td-dim">—</span>}</td>
-                              <td className="td-dim">{d.maker}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </main>
-            )}
-          </div>
-        </div>
-        
-        <div className={`detail-panel ${isDetailOpen ? 'open' : ''}`}>
-          {selectedDeviceObj && (
-            <>
-              <div className="panel-hd">
-                <button className="panel-close" onClick={()=>setIsDetailOpen(false)}>✕</button>
-                <div className="panel-icon">{selectedDeviceObj.type === 'FLIP' ? '📲' : '📱'}</div>
-                <div className="panel-dname">{selectedDeviceObj.name}</div>
-                <div className="panel-tags">{getBadge(selectedDeviceObj.type)} {getStatus(selectedDeviceObj.status)}</div>
-              </div>
-              <div className="panel-body">
-                <div className="psec">
-                  <div className="psec-title">기기 정보</div>
-                  <div>
-                    <div className="info-row"><span className="ik">시료 명</span><span className="iv">{selectedDeviceObj.name}</span></div>
-                    <div className="info-row"><span className="ik">시료 형태</span><span className="iv">{selectedDeviceObj.type}</span></div>
-                    <div className="info-row"><span className="ik">시료 상태</span><span className="iv">{selectedDeviceObj.status}</span></div>
-                    <div className="info-row"><span className="ik">OS</span><span className="iv">{selectedDeviceObj.os}</span></div>
-                    <div className="info-row"><span className="ik">시리얼 번호</span><span className="iv">{selectedDeviceObj.serial||'—'}</span></div>
-                    <div className="info-row"><span className="ik">대여/사용자</span><span className="iv">{selectedDeviceObj.user||'—'}</span></div>
-                    <div className="info-row"><span className="ik">제조사</span><span className="iv">{selectedDeviceObj.maker}</span></div>
-                    <div className="info-row"><span className="ik">USIM</span><span className="iv">{selectedDeviceObj.usim||'—'}</span></div>
-                  </div>
-                </div>
-                {selectedDeviceObj.adid && (
-                  <div className="psec">
-                    <div className="psec-title">ADID</div>
-                    <div className="adid-box">{selectedDeviceObj.adid}</div>
-                  </div>
-                )}
-                {!isGuest && (
-                  <div className="psec">
-                    <div className="psec-title">상태 변경</div>
-                    <div className="s-btns">
-                      <button className="s-btn" onClick={()=>changeStatus('보관중')}>보관중</button>
-                      <button className="s-btn" onClick={()=>changeStatus('사용중')}>사용중</button>
-                      <button className="s-btn" onClick={()=>changeStatus('대여중')}>대여중</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-              {!isGuest && (
-                <div className="panel-acts">
-                  <button className="act-btn primary" onClick={editDevice}>정보 수정</button>
-                  <button className="act-btn danger" onClick={triggerDelete}>시료 삭제</button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        <div className={`modal-overlay ${isModalOpen ? 'open' : ''}`} onClick={(e)=>{if(e.target===e.currentTarget) setIsModalOpen(false)}}>
-          <div className="modal">
-            <div className="modal-title">{editingId ? '시료 정보 수정' : '새 시료 등록'}</div>
-            <div className="form-row">
-              <div className="form-group"><label className="form-label">시료 명 *</label><input className="form-input" placeholder="Galaxy S25 Ultra" value={modalData.name} onChange={e=>setModalData({...modalData, name: e.target.value})}/></div>
-              <div className="form-group"><label className="form-label">제조사</label><input className="form-input" value={modalData.maker} onChange={e=>setModalData({...modalData, maker: e.target.value})}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">시료 형태</label>
-                <select className="form-input" value={modalData.type} onChange={e=>setModalData({...modalData, type: e.target.value})}>
-                  <option value="BAR">BAR</option><option value="FOLD">FOLD</option><option value="FLIP">FLIP</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">시료 상태</label>
-                <select className="form-input" value={modalData.status} onChange={e=>setModalData({...modalData, status: e.target.value})}>
-                  <option value="보관중">보관중</option><option value="사용중">사용중</option><option value="대여중">대여중</option>
-                </select>
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label className="form-label">OS</label><input className="form-input" placeholder="A16/O8.0" value={modalData.os} onChange={e=>setModalData({...modalData, os: e.target.value})}/></div>
-              <div className="form-group"><label className="form-label">시리얼 번호</label><input className="form-input" placeholder="R3CY..." value={modalData.serial} onChange={e=>setModalData({...modalData, serial: e.target.value})}/></div>
-            </div>
-            <div className="form-row">
-              <div className="form-group"><label className="form-label">대여/사용자</label><input className="form-input" placeholder="홍길동" value={modalData.user} onChange={e=>setModalData({...modalData, user: e.target.value})}/></div>
-              <div className="form-group"><label className="form-label">USIM</label><input className="form-input" value={modalData.usim} onChange={e=>setModalData({...modalData, usim: e.target.value})}/></div>
-            </div>
-            <div className="form-group"><label className="form-label">ADID</label><input className="form-input" placeholder="e0807df8-b3be-46d9-..." value={modalData.adid} onChange={e=>setModalData({...modalData, adid: e.target.value})}/></div>
-            <div className="modal-acts">
-              <button className="btn-cancel" onClick={()=>setIsModalOpen(false)}>취소</button>
-              <button className="btn-save" onClick={saveDevice}>저장</button>
-            </div>
-          </div>
-        </div>
-
-        <div className={`modal-overlay ${isDeleteModalOpen ? 'open' : ''}`} style={{zIndex:9999}} onClick={(e)=>{if(e.target===e.currentTarget) setIsDeleteModalOpen(false)}}>
-          <div className="modal" style={{width:'400px', padding:'28px'}}>
-             <div className="modal-title" style={{fontSize:'24px', marginBottom:'16px'}}>삭제 확인</div>
-             <div style={{fontFamily:'var(--fB)', fontSize:'14px', color:'var(--t1)', marginBottom:'24px'}}>
-                "{selectedDeviceObj?.name}" 시료를 정말 삭제하시겠습니까?<br/><span style={{color:'var(--t3)',fontSize:'12px'}}>이 작업은 되돌릴 수 없습니다.</span>
-             </div>
-             <div className="modal-acts" style={{marginTop:0}}>
-                 <button className="btn-cancel" onClick={()=>setIsDeleteModalOpen(false)}>취소</button>
-                 <button className="btn-save" style={{background:'#e53e3e'}} onClick={confirmDelete}>삭제</button>
-             </div>
-          </div>
-        </div>
-      </div>
+      {/* Screen Routing */}
+      {screen === 'splash' && (
+        <SplashScreen onComplete={() => setScreen('login')} />
+      )}
       
-      <div className="toast-container">
-        {toasts.map(t => <div key={t.id} className={`toast ${t.removing?'removing':''}`}><span style={{color:'var(--t2)',fontSize:'14px'}}>◆</span><span>{t.msg}</span></div>)}
-      </div>
+      {screen === 'login' && (
+        <LoginScreen 
+          onLogin={handleLogin} 
+          onInstallApp={() => showToast('기기가 PWA 설치를 지원하지 않거나 이미 설치되어 있습니다.')} 
+        />
+      )}
+
+      {screen === 'loadingBoard' && (
+        <TransitionLoading title="Functional Board" onComplete={() => setScreen('board')} />
+      )}
+
+      {screen === 'board' && (
+        <FunctionalBoard 
+          user={user} 
+          onNavigate={(target) => setScreen(target === 'dashboard' ? 'loadingDash' : target)}
+          onLogout={() => { setUser(null); setScreen('login'); }}
+        />
+      )}
+
+      {screen === 'loadingDash' && (
+        <TransitionLoading title="Devices Dashboard" onComplete={() => setScreen('dashboard')} />
+      )}
+
+      {screen === 'dashboard' && (
+        <DevicesDashboard 
+          user={user}
+          onNavigate={(target) => setScreen(target === 'board' ? 'loadingBoard' : target)}
+          onLogout={() => { setUser(null); setScreen('login'); }}
+          onQuit={() => { setUser(null); setScreen('splash'); }}
+        />
+      )}
     </>
   );
 }
