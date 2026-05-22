@@ -5,6 +5,24 @@ import {
   Filter, Grid, List, Plus, ChevronRight, ChevronLeft, X
 } from 'lucide-react';
 
+// Firebase Imports
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyATKKSrUm6NKATdZdJeDxhQ5Dj2Q32ujh0",
+  authDomain: "q-base-dev.firebaseapp.com",
+  projectId: "q-base-dev",
+  storageBucket: "q-base-dev.firebasestorage.app",
+  messagingSenderId: "756427289812",
+  appId: "1:756427289812:web:217c6ebb1bfbd1d931f741"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // === CSS Styles for Cinematic Animations ===
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
@@ -435,7 +453,7 @@ const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
     e.preventDefault(); 
   };
 
-  const handleDrop = (e, targetStatus) => {
+  const handleDrop = async (e, targetStatus) => {
     e.preventDefault();
     if (user.role === 'viewer') return; 
 
@@ -445,7 +463,8 @@ const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
     if (!device || device.status === targetStatus) return;
 
     if (targetStatus === '보관중') {
-      setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, status: targetStatus, renter: '' } : d));
+      const deviceRef = doc(db, 'devices', deviceId);
+      await updateDoc(deviceRef, { status: targetStatus, renter: '' });
     } else {
       setRentModal({ isOpen: true, deviceId, targetStatus });
     }
@@ -543,6 +562,30 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [viewType, setViewType] = useState('kanban'); 
   const [devices, setDevices] = useState(INITIAL_DEVICES);
+
+  useEffect(() => {
+    const devicesRef = collection(db, 'devices');
+    const unsubscribe = onSnapshot(devicesRef, (snapshot) => {
+      if (snapshot.empty) {
+        // DB가 비어있다면 초기 데이터를 자동으로 세팅합니다
+        const seedData = async () => {
+          const batch = writeBatch(db);
+          INITIAL_DEVICES.forEach(device => {
+            const docRef = doc(devicesRef, device.id);
+            batch.set(docRef, device);
+          });
+          await batch.commit();
+        };
+        seedData();
+      } else {
+        // 실시간으로 변경된 데이터를 가져옵니다
+        const devicesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setDevices(devicesData);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const [rentModal, setRentModal] = useState({ isOpen: false, deviceId: null, targetStatus: '' });
   const [renterName, setRenterName] = useState('');
 
@@ -564,15 +607,13 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
     rented: filteredDevices.filter(d => d.status === '대여중').length,
   };
 
-  const handleRentSubmit = (e) => {
+  const handleRentSubmit = async (e) => {
     e.preventDefault();
     if (!renterName.trim()) return;
     
-    setDevices(prev => prev.map(d => 
-      d.id === rentModal.deviceId 
-        ? { ...d, status: rentModal.targetStatus, renter: renterName }
-        : d
-    ));
+    const deviceRef = doc(db, 'devices', rentModal.deviceId);
+    await updateDoc(deviceRef, { status: rentModal.targetStatus, renter: renterName });
+    
     setRentModal({ isOpen: false, deviceId: null, targetStatus: '' });
     setRenterName('');
   };
