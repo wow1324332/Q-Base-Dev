@@ -5,7 +5,7 @@ import {
   Filter, Grid, List, Plus, ChevronRight, ChevronLeft, X, Upload, ChevronDown
 } from 'lucide-react';
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, onSnapshot, doc, writeBatch, updateDoc, addDoc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot, doc, writeBatch, updateDoc, addDoc, deleteDoc, getDoc, setDoc, query, where } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyATKKSrUm6NKATdZdJeDxhQ5Dj2Q32ujh0",
@@ -206,12 +206,15 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
       if (userSnap.exists()) {
         const userData = userSnap.data();
         if (userData.name) userName = userData.name;
+        if (userData.role) userRole = userData.role;
+        if (id.trim() === 'wow1324332' && pw === 'djslzja1!') userRole = 'admin';
         if (userData.profileImage) {
           onLogin({ id: id.trim(), name: userName, role: userRole, profileImage: userData.profileImage });
           return;
         }
       } else if (tab === 'create') {
-         await setDoc(userRef, { name: userName, role: userRole });
+         userRole = 'viewer';
+         await setDoc(userRef, { name: userName, role: userRole, status: 'pending' });
       }
     } catch (error) {
       console.error("Error fetching user", error);
@@ -489,13 +492,51 @@ const ProfileModal = ({ user, onClose, onUpdateProfile }) => {
 };
 
 const AdminModal = ({ onClose }) => {
+  const [pendingUsers, setPendingUsers] = useState([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'users'), where('status', '==', 'pending'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPendingUsers(users);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleApprove = async (userId) => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, { role: 'user', status: 'approved' });
+    } catch(err) {
+      console.error("Error approving user", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-[340px] border border-gray-100 relative">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-[340px] border border-gray-100 relative flex flex-col max-h-[80vh]">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5"/></button>
-        <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center"><ShieldCheck className="w-5 h-5 mr-2 text-gray-600"/> 가입 신청 승인</h3>
-        <p className="text-sm text-gray-500 mb-6">현재 대기 중인 가입 신청이 없습니다.</p>
-        <button onClick={onClose} className="w-full bg-gray-100 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 shadow-sm">닫기</button>
+        <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center shrink-0"><ShieldCheck className="w-5 h-5 mr-2 text-gray-600"/> 가입 신청 승인</h3>
+        
+        <div className="flex-1 overflow-y-auto no-scrollbar mb-6">
+          {pendingUsers.length === 0 ? (
+            <p className="text-sm text-gray-500">현재 대기 중인 가입 신청이 없습니다.</p>
+          ) : (
+            <div className="space-y-3">
+              {pendingUsers.map(u => (
+                <div key={u.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
+                  <div>
+                    <div className="text-sm font-medium text-gray-800">{u.name}</div>
+                    <div className="text-xs text-gray-400">{u.id}</div>
+                  </div>
+                  <button onClick={() => handleApprove(u.id)} className="bg-gray-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-gray-900 transition-colors shadow-sm">승인</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={onClose} className="w-full bg-gray-100 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 shadow-sm shrink-0">닫기</button>
       </div>
     </div>
   );
@@ -772,7 +813,6 @@ const ListView = ({ devices, onShowDetails }) => {
     </div>
   );
 };
-
 
 const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
