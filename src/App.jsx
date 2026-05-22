@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MonitorSmartphone, Settings, LogOut, Power, User, Users, 
   LayoutDashboard, Server, Download, ShieldCheck, 
-  Filter, Grid, List, Plus, ChevronRight, ChevronLeft, X, Upload
+  Filter, Grid, List, Plus, ChevronRight, ChevronLeft, X, Upload, ChevronDown
 } from 'lucide-react';
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, doc, writeBatch, updateDoc, addDoc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
@@ -20,11 +20,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const INITIAL_DEVICES = [
-  { id: 'd1', name: 'Galaxy Z Fold 5', type: 'Fold', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung' },
-  { id: 'd2', name: 'iPhone 15 Pro', type: 'Bar', os: 'iOS', status: '사용중', renter: '홍길동', manufacturer: 'Apple' },
-  { id: 'd3', name: 'Galaxy S24 Ultra', type: 'Bar', os: 'Android', status: '대여중', renter: '김철수', manufacturer: 'Samsung' },
-  { id: 'd4', name: 'Galaxy Z Flip 4', type: 'Flip', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung' },
-  { id: 'd5', name: 'iPhone 13 Mini', type: 'Bar', os: 'iOS', status: '보관중', renter: '', manufacturer: 'Apple' },
+  { id: 'd1', name: 'Galaxy Z Fold 5', type: 'Fold', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung', serial: 'SM-F946N' },
+  { id: 'd2', name: 'iPhone 15 Pro', type: 'Bar', os: 'iOS', status: '사용중', renter: '홍길동', manufacturer: 'Apple', serial: 'A3102' },
+  { id: 'd3', name: 'Galaxy S24 Ultra', type: 'Bar', os: 'Android', status: '대여중', renter: '김철수', manufacturer: 'Samsung', serial: 'SM-S928N' },
+  { id: 'd4', name: 'Galaxy Z Flip 4', type: 'Flip', os: 'Android', status: '보관중', renter: '', manufacturer: 'Samsung', serial: 'SM-F721N' },
+  { id: 'd5', name: 'iPhone 13 Mini', type: 'Bar', os: 'iOS', status: '보관중', renter: '', manufacturer: 'Apple', serial: 'A2628' },
 ];
 
 const globalStyles = `
@@ -72,6 +72,7 @@ const globalStyles = `
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
+
 const AppLogo = ({ className }) => {
   const [imgError, setImgError] = useState(false);
   
@@ -101,6 +102,46 @@ const Toast = ({ message, onClose }) => {
     </div>
   );
 };
+
+// 시네마틱 커스텀 셀렉터 컴포넌트
+const CustomSelect = ({ value, onChange, options, className }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={selectRef}>
+      <div
+        className={`flex items-center justify-between cursor-pointer select-none ${className}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{options.find(o => o.value === value)?.label || value}</span>
+        <ChevronDown className={`w-4 h-4 ml-2 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+      {isOpen && (
+        <div className="absolute z-[60] w-full mt-2 bg-white/95 backdrop-blur-xl border border-gray-100 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] py-1.5 animate-fade-in overflow-hidden left-0 min-w-max">
+          {options.map(opt => (
+            <div
+              key={opt.value}
+              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => { onChange(opt.value); setIsOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 const SplashScreen = ({ onComplete }) => {
   useEffect(() => {
@@ -302,6 +343,7 @@ const TransitionLoading = ({ title, onComplete }) => {
   );
 };
 
+
 const FunctionalBoard = ({ user, onNavigate, onLogout, onShowProfileModal, onShowAdminModal }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const onlineUsersCount = 1;
@@ -459,6 +501,7 @@ const AdminModal = ({ onClose }) => {
   );
 };
 
+
 const DeviceAddModal = ({ isOpen, onClose, formData, setFormData, onSubmit }) => {
   if (!isOpen) return null;
   return (
@@ -467,17 +510,50 @@ const DeviceAddModal = ({ isOpen, onClose, formData, setFormData, onSubmit }) =>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-5 h-5"/></button>
         <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center"><Plus className="w-5 h-5 mr-2 text-gray-600"/> 디바이스 추가</h3>
         <form onSubmit={onSubmit} className="space-y-4">
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">디바이스명</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">디바이스명</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">제조사</label><input required value={formData.manufacturer} onChange={e=>setFormData({...formData, manufacturer: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">OS</label><select value={formData.os} onChange={e=>setFormData({...formData, os: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>Android</option><option>iOS</option></select></div>
+            <div><label className="text-xs font-medium text-gray-500 mb-1 block">제조사</label><input required value={formData.manufacturer} onChange={e=>setFormData({...formData, manufacturer: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">OS</label>
+              <CustomSelect 
+                value={formData.os} onChange={val=>setFormData({...formData, os: val})} 
+                options={[{value:'Android', label:'Android'}, {value:'iOS', label:'iOS'}]}
+                className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">형태</label><select value={formData.type} onChange={e=>setFormData({...formData, type: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>Bar</option><option>Fold</option><option>Flip</option></select></div>
-            <div><label className="text-xs font-medium text-gray-500 mb-1 block">상태</label><select value={formData.status} onChange={e=>setFormData({...formData, status: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>보관중</option><option>사용중</option><option>대여중</option></select></div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">형태</label>
+              <CustomSelect 
+                value={formData.type} onChange={val=>setFormData({...formData, type: val})} 
+                options={[{value:'Bar', label:'Bar'}, {value:'Fold', label:'Fold'}, {value:'Flip', label:'Flip'}]}
+                className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-500 mb-1 block">상태</label>
+              <CustomSelect 
+                value={formData.status} 
+                onChange={val=>{
+                  if(val === '보관중') setFormData({...formData, status: val, renter: ''});
+                  else setFormData({...formData, status: val});
+                }} 
+                options={[{value:'보관중', label:'보관중'}, {value:'사용중', label:'사용중'}, {value:'대여중', label:'대여중'}]}
+                className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+              />
+            </div>
           </div>
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">시리얼 번호</label><input value={formData.serial} onChange={e=>setFormData({...formData, serial: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
-          <div><label className="text-xs font-medium text-gray-500 mb-1 block">사용/대여자</label><input value={formData.renter} onChange={e=>setFormData({...formData, renter: e.target.value})} placeholder="상태가 보관중이면 비워두세요" className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
+          <div><label className="text-xs font-medium text-gray-500 mb-1 block">시리얼 번호</label><input required value={formData.serial} onChange={e=>setFormData({...formData, serial: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
+          <div>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">사용/대여자</label>
+            <input 
+              value={formData.renter} onChange={e=>setFormData({...formData, renter: e.target.value})} 
+              disabled={formData.status === '보관중'}
+              placeholder={formData.status === '보관중' ? '보관중에는 입력할 수 없습니다' : '이름을 입력하세요'} 
+              className={`w-full text-sm rounded-lg px-3 py-2 outline-none transition-colors shadow-sm ${formData.status === '보관중' ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-50 border border-gray-200 focus:border-gray-400 text-gray-800'}`} 
+            />
+          </div>
           <button type="submit" className="w-full bg-gray-800 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-900 transition-colors mt-2 shadow-md">저장하기</button>
         </form>
       </div>
@@ -506,19 +582,53 @@ const DeviceDetailModal = ({ device, onClose, onUpdate, onDelete, user }) => {
         
         {editMode ? (
           <form onSubmit={handleSubmit} className="space-y-4">
-             <div><label className="text-xs font-medium text-gray-500 mb-1 block">디바이스명</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
+             <div><label className="text-xs font-medium text-gray-500 mb-1 block">디바이스명</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
              <div className="grid grid-cols-2 gap-4">
-               <div><label className="text-xs font-medium text-gray-500 mb-1 block">제조사</label><input required value={formData.manufacturer} onChange={e=>setFormData({...formData, manufacturer: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
-               <div><label className="text-xs font-medium text-gray-500 mb-1 block">OS</label><select value={formData.os} onChange={e=>setFormData({...formData, os: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>Android</option><option>iOS</option></select></div>
+               <div><label className="text-xs font-medium text-gray-500 mb-1 block">제조사</label><input required value={formData.manufacturer} onChange={e=>setFormData({...formData, manufacturer: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
+               <div>
+                 <label className="text-xs font-medium text-gray-500 mb-1 block">OS</label>
+                 <CustomSelect 
+                    value={formData.os} onChange={val=>setFormData({...formData, os: val})} 
+                    options={[{value:'Android', label:'Android'}, {value:'iOS', label:'iOS'}]}
+                    className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+                 />
+               </div>
              </div>
              <div className="grid grid-cols-2 gap-4">
-               <div><label className="text-xs font-medium text-gray-500 mb-1 block">형태</label><select value={formData.type} onChange={e=>setFormData({...formData, type: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>Bar</option><option>Fold</option><option>Flip</option></select></div>
-               <div><label className="text-xs font-medium text-gray-500 mb-1 block">상태</label><select value={formData.status} onChange={e=>setFormData({...formData, status: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none shadow-sm"><option>보관중</option><option>사용중</option><option>대여중</option></select></div>
+               <div>
+                 <label className="text-xs font-medium text-gray-500 mb-1 block">형태</label>
+                 <CustomSelect 
+                    value={formData.type} onChange={val=>setFormData({...formData, type: val})} 
+                    options={[{value:'Bar', label:'Bar'}, {value:'Fold', label:'Fold'}, {value:'Flip', label:'Flip'}]}
+                    className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+                 />
+               </div>
+               <div>
+                 <label className="text-xs font-medium text-gray-500 mb-1 block">상태</label>
+                 <CustomSelect 
+                    value={formData.status} 
+                    onChange={val=>{
+                      if(val === '보관중') setFormData({...formData, status: val, renter: ''});
+                      else setFormData({...formData, status: val});
+                    }} 
+                    options={[{value:'보관중', label:'보관중'}, {value:'사용중', label:'사용중'}, {value:'대여중', label:'대여중'}]}
+                    className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 shadow-sm transition-colors hover:border-gray-300"
+                 />
+               </div>
              </div>
-             <div><label className="text-xs font-medium text-gray-500 mb-1 block">사용/대여자</label><input value={formData.renter} onChange={e=>setFormData({...formData, renter: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm" /></div>
+             <div><label className="text-xs font-medium text-gray-500 mb-1 block">시리얼 번호</label><input required value={formData.serial || ''} onChange={e=>setFormData({...formData, serial: e.target.value})} className="w-full bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none focus:border-gray-400 shadow-sm transition-colors" /></div>
+             <div>
+               <label className="text-xs font-medium text-gray-500 mb-1 block">사용/대여자</label>
+               <input 
+                  value={formData.renter} onChange={e=>setFormData({...formData, renter: e.target.value})} 
+                  disabled={formData.status === '보관중'}
+                  placeholder={formData.status === '보관중' ? '보관중에는 입력할 수 없습니다' : '이름을 입력하세요'}
+                  className={`w-full text-sm rounded-lg px-3 py-2 outline-none transition-colors shadow-sm ${formData.status === '보관중' ? 'bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-50 border border-gray-200 focus:border-gray-400 text-gray-800'}`} 
+               />
+             </div>
              <div className="flex space-x-2 mt-4">
-               <button type="button" onClick={() => setEditMode(false)} className="flex-1 bg-gray-100 text-gray-600 text-sm font-medium py-2 rounded-xl border border-gray-200 shadow-sm">취소</button>
-               <button type="submit" className="flex-1 bg-gray-800 text-white text-sm font-medium py-2 rounded-xl shadow-md">저장</button>
+               <button type="button" onClick={() => setEditMode(false)} className="flex-1 bg-gray-100 text-gray-600 text-sm font-medium py-2 rounded-xl border border-gray-200 shadow-sm hover:bg-gray-200 transition-colors">취소</button>
+               <button type="submit" className="flex-1 bg-gray-800 text-white text-sm font-medium py-2 rounded-xl shadow-md hover:bg-gray-900 transition-colors">저장</button>
              </div>
           </form>
         ) : (
@@ -530,8 +640,9 @@ const DeviceDetailModal = ({ device, onClose, onUpdate, onDelete, user }) => {
              </div>
              <div className="grid grid-cols-2 gap-4">
                <div><span className="text-xs text-gray-400 block mb-1">상태</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.status}</div></div>
-               <div><span className="text-xs text-gray-400 block mb-1">대여자</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.renter || '없음'}</div></div>
+               <div><span className="text-xs text-gray-400 block mb-1">대여자</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.renter || '-'}</div></div>
              </div>
+             <div><span className="text-xs text-gray-400 block mb-1">시리얼 번호</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.serial || '-'}</div></div>
              {!isViewer && (
                <div className="flex space-x-2 pt-4 border-t border-gray-100">
                  <button onClick={() => setEditMode(true)} className="flex-1 bg-gray-100 text-gray-700 text-sm font-medium py-2 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 shadow-sm">수정하기</button>
@@ -544,6 +655,7 @@ const DeviceDetailModal = ({ device, onClose, onUpdate, onDelete, user }) => {
     </div>
   );
 };
+
 
 const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
   const columns = [
@@ -573,7 +685,7 @@ const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
       {columns.map(col => (
         <div 
           key={col.id} 
-          className="flex-1 min-w-[300px] bg-gray-50/80 rounded-2xl p-4 flex flex-col border border-gray-200 shadow-md"
+          className="flex-1 min-w-[300px] bg-gray-100/80 rounded-2xl p-4 flex flex-col border border-gray-200 shadow-md"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, col.id)}
         >
@@ -601,7 +713,7 @@ const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
                 <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
                   <span className="font-medium text-gray-600">{device.os}</span>
                   {device.renter ? (
-                    <span className="flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium border border-blue-100">
+                    <span className="flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium border border-blue-100 shadow-sm">
                       <User className="w-3 h-3 mr-1" /> {device.renter}
                     </span>
                   ) : (
@@ -622,7 +734,7 @@ const ListView = ({ devices, onShowDetails }) => {
     <div className="w-full bg-white rounded-2xl border border-gray-200 shadow-md overflow-hidden animate-fade-in">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-gray-50/80 border-b border-gray-200">
+          <tr className="bg-gray-100/80 border-b border-gray-200">
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">상태</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">디바이스명</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">제조사</th>
@@ -639,7 +751,7 @@ const ListView = ({ devices, onShowDetails }) => {
               className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer group"
             >
               <td className="px-6 py-4">
-                <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                <span className={`text-xs px-2.5 py-1 rounded-full font-bold shadow-sm ${
                   device.status === '보관중' ? 'bg-gray-100 text-gray-600 border border-gray-200' :
                   device.status === '사용중' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-blue-50 text-blue-600 border border-blue-200'
                 }`}>
@@ -661,10 +773,12 @@ const ListView = ({ devices, onShowDetails }) => {
   );
 };
 
+
 const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeMenu, setActiveMenu] = useState('dashboard'); // 'dashboard', 'android', 'ios'
   const [viewType, setViewType] = useState('kanban'); 
-  const [devices, setDevices] = useState(INITIAL_DEVICES); // Fallback to initial devices to prevent empty UI
+  const [devices, setDevices] = useState(INITIAL_DEVICES);
   
   const [rentModal, setRentModal] = useState({ isOpen: false, deviceId: null, targetStatus: '' });
   const [renterName, setRenterName] = useState('');
@@ -684,8 +798,8 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
         const seedData = async () => {
           const batch = writeBatch(db);
           INITIAL_DEVICES.forEach(device => {
-            const docRef = doc(devicesRef, device.id);
-            batch.set(docRef, device);
+            const docRef = doc(devicesRef); 
+            batch.set(docRef, { ...device, id: undefined });
           });
           await batch.commit();
         };
@@ -696,7 +810,6 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
       }
     }, (error) => {
       console.error("Firebase fetch error", error);
-      // Fallback in case of permissions or network errors
       setDevices(INITIAL_DEVICES);
     });
     return () => unsubscribe();
@@ -760,8 +873,13 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   };
 
   const filteredDevices = devices.filter(d => {
-    if (osFilter !== 'All' && d.os !== osFilter) return false;
-    if (typeFilter !== 'All' && d.type !== typeFilter) return false;
+    if (activeMenu === 'android' && d.os !== 'Android') return false;
+    if (activeMenu === 'ios' && d.os !== 'iOS') return false;
+    
+    if (activeMenu === 'dashboard') {
+      if (osFilter !== 'All' && d.os !== osFilter) return false;
+      if (typeFilter !== 'All' && d.type !== typeFilter) return false;
+    }
     return true;
   });
 
@@ -820,13 +938,17 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
               <span className="text-sm font-medium">기능 보드 이동</span>
             </button>
             <div className="h-px bg-gray-100 my-2 mx-3"></div>
-            <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl bg-gray-50 text-gray-900 font-medium border border-gray-200 shadow-sm">
-              <Server className="w-4 h-4 text-gray-700" />
+            
+            <button 
+              onClick={() => setActiveMenu('dashboard')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl transition-colors ${activeMenu === 'dashboard' ? 'bg-gray-50 text-gray-900 font-medium border border-gray-200 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+            >
+              <Server className={`w-4 h-4 ${activeMenu === 'dashboard' ? 'text-gray-700' : ''}`} />
               <span className="text-sm">대시보드 (Devices)</span>
             </button>
             <button 
-              onClick={() => { setOsFilter('Android'); if(!sidebarOpen) setSidebarOpen(true); }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${osFilter === 'Android' ? 'bg-green-50/50 text-green-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+              onClick={() => { setActiveMenu('android'); if(!sidebarOpen) setSidebarOpen(true); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${activeMenu === 'android' ? 'bg-green-50/50 text-green-700 font-medium border border-green-100 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-sm"></div>
@@ -834,8 +956,8 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
               </div>
             </button>
             <button 
-              onClick={() => { setOsFilter('iOS'); if(!sidebarOpen) setSidebarOpen(true); }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${osFilter === 'iOS' ? 'bg-blue-50/50 text-blue-700 font-medium' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
+              onClick={() => { setActiveMenu('ios'); if(!sidebarOpen) setSidebarOpen(true); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${activeMenu === 'ios' ? 'bg-blue-50/50 text-blue-700 font-medium border border-blue-100 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-sm"></div>
@@ -860,35 +982,38 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
             <div>
               <div className="flex items-center space-x-3 mb-1">
                 <h1 className="text-2xl font-bold text-gray-800">
-                  {osFilter === 'All' ? '전체 디바이스' : osFilter}
+                  {activeMenu === 'android' ? 'Android 디바이스' : activeMenu === 'ios' ? 'iOS 디바이스' : (osFilter === 'All' ? '전체 디바이스' : osFilter)}
                 </h1>
                 {user.role === 'viewer' && (
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded border border-gray-200 font-semibold uppercase tracking-wider">Read Only</span>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded border border-gray-200 font-semibold uppercase tracking-wider shadow-sm">Read Only</span>
                 )}
               </div>
               <p className="text-sm text-gray-500 font-medium">테스트 단말기의 상태를 모니터링하고 관리합니다.</p>
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="bg-white border border-gray-200 rounded-lg p-1 flex shadow-sm">
-                <button 
-                  onClick={() => setViewType('kanban')}
-                  className={`p-1.5 rounded-md transition-colors ${viewType === 'kanban' ? 'bg-gray-100 text-gray-800 shadow-sm font-semibold' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button 
-                  onClick={() => setViewType('list')}
-                  className={`p-1.5 rounded-md transition-colors ${viewType === 'list' ? 'bg-gray-100 text-gray-800 shadow-sm font-semibold' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
+              {activeMenu === 'dashboard' && (
+                <div className="bg-white border border-gray-200 rounded-lg p-1 flex shadow-sm">
+                  <button 
+                    onClick={() => setViewType('kanban')}
+                    className={`p-1.5 rounded-md transition-colors ${viewType === 'kanban' ? 'bg-gray-100 text-gray-800 shadow-sm font-semibold' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    <Grid className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setViewType('list')}
+                    className={`p-1.5 rounded-md transition-colors ${viewType === 'list' ? 'bg-gray-100 text-gray-800 shadow-sm font-semibold' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {user.role !== 'viewer' && (
                 <button 
                   onClick={() => {
-                    setFormData({ name: '', type: 'Bar', os: 'Android', status: '보관중', serial: '', manufacturer: '', renter: '' });
+                    const presetOs = activeMenu === 'android' ? 'Android' : activeMenu === 'ios' ? 'iOS' : 'Android';
+                    setFormData({ name: '', type: 'Bar', os: presetOs, status: '보관중', serial: '', manufacturer: '', renter: '' });
                     setShowAddModal(true);
                   }}
                   className="bg-gray-800 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-900 transition-colors shadow-md hover-breath flex items-center"
@@ -899,52 +1024,47 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
             </div>
           </div>
 
-          <div className="flex justify-between items-center bg-white p-3 pl-6 rounded-2xl shadow-md border border-gray-200 mb-6 shrink-0">
-            <div className="flex space-x-8">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Total</span>
-                <span className="text-xl font-bold text-gray-800">{summary.total}</span>
+          {activeMenu === 'dashboard' && (
+            <div className="flex justify-between items-center bg-white p-3 pl-6 rounded-2xl shadow-md border border-gray-200 mb-6 shrink-0">
+              <div className="flex space-x-8">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Total</span>
+                  <span className="text-xl font-bold text-gray-800">{summary.total}</span>
+                </div>
+                <div className="w-px bg-gray-200 my-1"></div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">사용중</span>
+                  <span className="text-xl font-bold text-green-600">{summary.inUse}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">대여중</span>
+                  <span className="text-xl font-bold text-blue-600">{summary.rented}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">보관중</span>
+                  <span className="text-xl font-bold text-gray-600">{summary.storage}</span>
+                </div>
               </div>
-              <div className="w-px bg-gray-200 my-1"></div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">사용중</span>
-                <span className="text-xl font-bold text-green-600">{summary.inUse}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">대여중</span>
-                <span className="text-xl font-bold text-blue-600">{summary.rented}</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">보관중</span>
-                <span className="text-xl font-bold text-gray-600">{summary.storage}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl border border-gray-200 shadow-sm">
-              <Filter className="w-4 h-4 text-gray-500 ml-2" />
-              <select 
-                value={osFilter} onChange={(e) => setOsFilter(e.target.value)}
-                className="bg-transparent border-none text-xs font-medium text-gray-700 focus:ring-0 cursor-pointer py-1 outline-none"
-              >
-                <option value="All">OS 전체</option>
-                <option value="Android">Android</option>
-                <option value="iOS">iOS</option>
-              </select>
-              <div className="w-px h-4 bg-gray-300"></div>
-              <select 
-                value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-                className="bg-transparent border-none text-xs font-medium text-gray-700 focus:ring-0 cursor-pointer py-1 outline-none"
-              >
-                <option value="All">형태 전체</option>
-                <option value="Fold">폴드</option>
-                <option value="Flip">플립</option>
-                <option value="Bar">바</option>
-              </select>
+              <div className="flex items-center space-x-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-sm mr-1">
+                <Filter className="w-4 h-4 text-gray-400 ml-2" />
+                <CustomSelect 
+                  value={osFilter} onChange={setOsFilter} 
+                  options={[{value:'All', label:'OS 전체'}, {value:'Android', label:'Android'}, {value:'iOS', label:'iOS'}]}
+                  className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors"
+                />
+                <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                <CustomSelect 
+                  value={typeFilter} onChange={setTypeFilter} 
+                  options={[{value:'All', label:'형태 전체'}, {value:'Fold', label:'폴드'}, {value:'Flip', label:'플립'}, {value:'Bar', label:'바'}]}
+                  className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex-1 overflow-hidden">
-             {viewType === 'kanban' ? (
+             {(viewType === 'kanban' && activeMenu === 'dashboard') ? (
                <KanbanBoard devices={filteredDevices} user={user} onStatusChange={handleStatusChangeRequest} onShowDetails={setSelectedDevice} />
              ) : (
                <div className="h-full overflow-auto no-scrollbar">
@@ -996,6 +1116,7 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
     </div>
   );
 };
+
 
 export default function App() {
   const [screen, setScreen] = useState('splash');
