@@ -104,10 +104,7 @@ const SplashScreen = ({ onComplete }) => {
   return (
     <div className="w-screen h-screen bg-cinematic flex flex-col items-center justify-center animate-simple-fade">
       <div className="animate-fade-in flex flex-col items-center">
-        <div className="w-24 h-24 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-tr from-gray-100 to-transparent opacity-50"></div>
-          <img src="/icon-192x192.png" alt="QA Base Icon" className="w-14 h-14 relative z-10 object-contain" />
-        </div>
+        <img src="/icon-192x192.png" alt="QA Base Icon" className="w-32 h-32 object-contain mb-6 drop-shadow-xl" />
         <h1 className="text-4xl font-light tracking-widest text-gray-800 mb-2">QA BASE</h1>
         <p className="text-sm text-gray-500 tracking-wider">Quality Assurance Command Center</p>
         
@@ -155,9 +152,7 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
       <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-white p-8 animate-fade-in relative z-10">
         
         <div className="flex justify-center mb-8">
-          <div className="w-12 h-12 bg-gray-50 rounded-xl shadow-inner flex items-center justify-center overflow-hidden relative">
-            <img src="/icon-192x192.png" alt="QA Base Icon" className="w-7 h-7 relative z-10 object-contain" />
-          </div>
+          <img src="/icon-192x192.png" alt="QA Base Icon" className="w-20 h-20 object-contain drop-shadow-md" />
         </div>
 
         {/* Tabs */}
