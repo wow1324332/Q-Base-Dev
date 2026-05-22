@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q Base</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════
+   DESIGN TOKENS  —  Pure Monochrome
+════════════════════════════════════════ */
+:root{
+  --bg:     #f5f5f3;
+  --bg2:    #ffffff;
+  --bg3:    #f0efed;
+  --s0:     #ebebea;
+  --s1:     #e2e2e0;
+  --s2:     #d4d4d2;
+  --b0:     rgba(0,0,0,0.07);
+  --b1:     rgba(0,0,0,0.12);
+  --b2:     rgba(0,0,0,0.22);
+  --t0:     #111111;
+  --t1:     #333333;
+  --t2:     #6b6b6b;
+  --t3:     #a0a0a0;
+  --t4:     #d0d0d0;
+
+  /* Status tints — muted, not saturated */
+  --c-stored:  #5a6472;   /* cool gray  */
+  --c-inuse:   #1a1a1a;   /* near-black */
+  --c-lent:    #7a6e68;   /* warm gray  */
+
+  --c-stored-bg:  rgba(90,100,114,0.07);
+  --c-inuse-bg:   rgba(26,26,26,0.05);
+  --c-lent-bg:    rgba(122,110,104,0.07);
+
+  --c-stored-border: rgba(90,100,114,0.18);
+  --c-inuse-border:  rgba(26,26,26,0.16);
+  --c-lent-border:   rgba(122,110,104,0.18);
+
+  --radius:   10px;
+  --radius-lg:16px;
+
+  --fA: 'Anton', sans-serif;           /* cinematic display */
+  --fB: 'Barlow', sans-serif;          /* body / UI         */
+  --fC: 'Barlow Condensed', sans-serif;/* condensed labels  */
+  --fM: 'JetBrains Mono', monospace;   /* data / code       */
+
+  --max-w: 1440px;
+  --pad: 48px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--fB);}
+
+/* ── Subtle noise overlay ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:0.4;
+}
+
+/* ── Subtle grid ── */
+.grid-bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(var(--b0) 1px,transparent 1px),
+    linear-gradient(90deg,var(--b0) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ════════════════════════════════════════
+   LOGIN
+════════════════════════════════════════ */
+#login-screen{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg);
+}
+
+.login-wrap{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;
+  gap:0;
+}
+
+/* ── Gear ── */
+.gear-scene{
+  width:120px;height:80px;
+  margin-bottom:-4px;
+  display:flex;align-items:flex-end;justify-content:center;
+  overflow:hidden;
+}
+.gear-center-g{animation:gSpin  9s linear infinite;transform-origin:60px 60px;}
+.gear-left-g  {animation:gSpinR 6s linear infinite;transform-origin:18px 60px;}
+.gear-right-g {animation:gSpin  6s linear infinite;transform-origin:102px 60px;}
+@keyframes gSpin {from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+@keyframes gSpinR{from{transform:rotate(0deg);}to{transform:rotate(-360deg);}}
+
+.gear-path{fill:none;stroke-linecap:round;}
+
+/* ── Card ── */
+.login-card{
+  width:440px;
+  background:var(--bg2);
+  border:1px solid var(--b1);
+  border-radius:20px;
+  padding:40px 40px 34px;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.04),
+    0 20px 60px rgba(0,0,0,0.12);
+  animation:cardIn .65s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:none;}}
+
+.login-brand{text-align:center;margin-bottom:30px;}
+.login-mark{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:52px;height:52px;border-radius:14px;
+  background:var(--t0);
+  font-family:var(--fA);font-size:22px;color:var(--bg2);
+  margin-bottom:14px;letter-spacing:1px;
+}
+.login-title{
+  font-family:var(--fA);font-size:48px;letter-spacing:4px;
+  color:var(--t0);line-height:1;
+}
+.login-sub{
+  font-family:var(--fM);font-size:10px;color:var(--t3);
+  letter-spacing:2.5px;text-transform:uppercase;margin-top:6px;
+}
+
+/* ── Tabs ── */
+.login-tabs{
+  display:flex;background:var(--s0);border:1px solid var(--b0);
+  border-radius:10px;padding:4px;margin-bottom:24px;gap:4px;
+}
+.login-tab{
+  flex:1;padding:10px;border-radius:7px;border:none;
+  background:none;color:var(--t2);
+  font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.login-tab.active{background:var(--s2);color:var(--t0);}
+
+/* ── Fields ── */
+.lf-group{display:flex;flex-direction:column;gap:7px;margin-bottom:14px;}
+.lf-label{
+  font-family:var(--fC);font-size:11px;font-weight:600;
+  color:var(--t3);letter-spacing:2px;text-transform:uppercase;
+}
+.lf-input{
+  padding:13px 16px;
+  background:var(--s0);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t0);font-family:var(--fB);font-size:15px;font-weight:300;
+  outline:none;transition:all .2s;
+}
+.lf-input:focus{border-color:var(--b2);background:var(--s1);}
+.lf-input::placeholder{color:var(--t3);}
+
+.btn-login{
+  width:100%;margin-top:6px;padding:15px;
+  background:var(--t0);border:none;border-radius:10px;
+  color:var(--bg);font-family:var(--fA);font-size:20px;letter-spacing:3px;
+  cursor:pointer;transition:all .2s;
+}
+.btn-login:hover{background:var(--t1);transform:translateY(-1px);}
+.btn-login:active{transform:translateY(0);}
+
+.login-divider{
+  display:flex;align-items:center;gap:14px;margin:14px 0;
+  font-family:var(--fM);font-size:10px;color:var(--t3);letter-spacing:1px;
+}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--b0);}
+
+.btn-guest{
+  width:100%;padding:13px;
+  background:transparent;border:1px solid var(--b1);border-radius:10px;
+  color:var(--t2);font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;
+}
+.btn-guest:hover{background:var(--s0);color:var(--t1);border-color:var(--b2);}
+
+.login-error{
+  padding:11px 15px;border-radius:9px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+  color:var(--t1);font-family:var(--fM);font-size:11px;letter-spacing:.3px;
+  display:none;margin-bottom:10px;
+}
+.login-error.show{display:block;}
+
+.create-hint{
+  font-family:var(--fM);font-size:10px;color:var(--t3);
+  text-align:center;margin-top:10px;letter-spacing:.5px;
+}
+
+/* Pending */
+.pending-section{margin-top:22px;display:none;}
+.pending-section.show{display:block;}
+.pending-label{
+  font-family:var(--fC);font-size:11px;font-weight:600;color:var(--t3);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;
+}
+.pending-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 14px;border-radius:10px;
+  background:var(--s0);border:1px solid var(--b0);margin-bottom:6px;
+}
+.pending-name{font-family:var(--fB);font-size:14px;font-weight:500;color:var(--t0);}
+.pending-id{font-family:var(--fM);font-size:10px;color:var(--t3);margin-top:1px;}
+.pending-acts{display:flex;gap:6px;}
+.btn-approve{
+  padding:5px 13px;border-radius:7px;border:1px solid var(--b1);
+  background:transparent;color:var(--t1);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;transition:all .15s;
+}
+.btn-approve:hover{background:var(--s1);color:var(--t0);}
+.btn-reject{
+  padding:5px 13px;border-radius:7px;border:1px solid var(--b0);
+  background:transparent;color:var(--t3);font-family:var(--fC);font-size:11px;font-weight:600;letter-spacing:1px;
+  cursor:pointer;transition:all .15s;
+}
+.btn-reject:hover{color:var(--t2);}
+
+/* ════════════════════════════════════════
+   APP SHELL
+════════════════════════════════════════ */
+#app{display:none;min-height:100vh;flex-direction:column;}
+#app.visible{display:flex;}
+
+/* ── Topbar ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  border-bottom:1px solid var(--b1);
+  background:rgba(255,255,255,0.92);
+  backdrop-filter:blur(28px);
+}
+.topbar-inner{
+  max-width:var(--max-w);margin:0 auto;
+  padding:0 var(--pad);height:66px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+
+.logo{display:flex;align-items:center;gap:14px;}
+.logo-mark{
+  width:36px;height:36px;border-radius:9px;
+  background:var(--t0);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fA);font-size:15px;color:var(--bg2);letter-spacing:1px;
+}
+.logo-wordmark{font-family:var(--fA);font-size:24px;letter-spacing:4px;color:var(--t0);line-height:1;}
+.logo-sub{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+
+.view-switcher{display:flex;gap:4px;background:var(--s0);border:1px solid var(--b0);border-radius:10px;padding:4px;}
+.vsw{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 18px;border-radius:7px;border:none;background:none;
+  font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--t3);cursor:pointer;transition:all .2s;
+}
+.vsw svg{opacity:.4;transition:opacity .2s;flex-shrink:0;}
+.vsw:hover{color:var(--t1);}
+.vsw.active{background:var(--s2);color:var(--t0);}
+.vsw.active svg{opacity:1;}
+
+.topbar-right{display:flex;align-items:center;gap:16px;}
+
+.tb-stat{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 18px;background:var(--s0);border:1px solid var(--b1);border-radius:9px;
+  font-family:var(--fC);font-size:13px;font-weight:500;letter-spacing:1px;color:var(--t2);
+  height:42px;
+}
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--t2);animation:pd 2.4s ease-in-out infinite;}
+@keyframes pd{0%,100%{opacity:1;}50%{opacity:.25;}}
+
+.user-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 16px 6px 6px;
+  background:var(--s0);border:1px solid var(--b1);border-radius:40px;
+  cursor:pointer;transition:all .2s;
+  height:42px;
+}
+.user-pill:hover{background:var(--s1);}
+.user-av{
+  width:30px;height:30px;border-radius:50%;
+  background:var(--s2);border:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fC);font-size:12px;font-weight:700;color:var(--t0);
+}
+.user-info-name{font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--t1);}
+.user-info-role{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;}
+
+.btn-add{
+  display:flex;align-items:center;gap:8px;
+  padding:0 26px;
+  background:var(--t0);border:none;border-radius:9px;
+  font-family:var(--fA);font-size:16px;letter-spacing:2px;color:var(--bg2);
+  cursor:pointer;transition:all .2s;
+  height:42px;white-space:nowrap;
+}
+.btn-add:hover{opacity:.85;transform:translateY(-1px);}
+.btn-add:active{transform:none;}
+
+.btn-logout{
+  padding:0 20px;background:var(--s0);border:1px solid var(--b1);border-radius:9px;
+  font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2);
+  cursor:pointer;transition:all .2s;
+  height:42px;white-space:nowrap;
+}
+.btn-logout:hover{color:var(--t0);border-color:var(--b2);background:var(--s1);}
+
+/* ── Main ── */
+.main{flex:1;}
+.main-inner{
+  max-width:var(--max-w);margin:0 auto;
+  padding:40px var(--pad) 60px;
+  display:flex;flex-direction:column;gap:32px;
+}
+
+/* ── Guest Banner ── */
+.guest-banner{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 18px;border-radius:10px;
+  background:rgba(0,0,0,0.03);border:1px solid var(--b1);
+  font-family:var(--fM);font-size:11px;color:var(--t2);letter-spacing:.5px;
+}
+
+/* ── Controls Row ── */
+.controls-row{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;
+}
+
+.search-box{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;background:var(--s0);border:1px solid var(--b1);border-radius:10px;
+  transition:all .2s;width:260px;
+}
+.search-box:focus-within{border-color:var(--b2);background:var(--s1);}
+.search-box svg{color:var(--t3);flex-shrink:0;}
+.search-box input{
+  background:none;border:none;outline:none;
+  font-family:var(--fB);font-size:14px;font-weight:300;color:var(--t0);width:100%;
+}
+.search-box input::placeholder{color:var(--t3);}
+
+.chips-group{display:flex;align-items:center;gap:6px;}
+.chips-label{
+  font-family:var(--fC);font-size:10px;font-weight:600;color:var(--t3);
+  letter-spacing:2px;text-transform:uppercase;padding-right:2px;
+}
+.chip{
+  padding:7px 14px;border-radius:8px;border:1px solid var(--b0);background:var(--s0);
+  font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:var(--t3);cursor:pointer;transition:all .2s;
+}
+.chip:hover{border-color:var(--b1);color:var(--t1);}
+.chip.active{background:var(--s2);border-color:var(--b2);color:var(--t0);}
+
+/* ── Stat Cards ── */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:28px 24px 22px;cursor:pointer;transition:all .3s ease;
+  position:relative;overflow:hidden;
+}
+.stat-card:hover{border-color:var(--b1);transform:translateY(-2px);}
+.stat-num{
+  font-family:var(--fA);font-size:64px;line-height:1;letter-spacing:-1px;
+  color:var(--t0);margin-bottom:8px;
+}
+.stat-lbl{
+  font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--t3);margin-bottom:18px;
+}
+.stat-bar-t{height:1px;background:var(--b0);}
+.stat-bar-f{height:100%;background:var(--t2);transition:width 1.1s cubic-bezier(.4,0,.2,1);}
+
+/* ── Kanban ── */
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start;}
+.kanban-col{
+  background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.kanban-header{
+  padding:20px 22px 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--b0);
+}
+.col-title-wrap{display:flex;align-items:center;gap:10px;}
+.col-dot{width:7px;height:7px;border-radius:50%;}
+.dot-stored{background:var(--c-stored);}
+.dot-inuse{background:var(--c-inuse);animation:pd 2s ease-in-out infinite;}
+.dot-lent{background:var(--c-lent);animation:pd 1.5s ease-in-out infinite;}
+.col-title{font-family:var(--fA);font-size:22px;letter-spacing:2px;color:var(--t0);}
+.col-cnt{
+  font-family:var(--fA);font-size:20px;letter-spacing:1px;
+  padding:4px 10px;border-radius:7px;
+  background:var(--s0);color:var(--t2);
+}
+.kanban-cards{padding:12px;display:flex;flex-direction:column;gap:8px;}
+
+/* ── Device Card ── */
+.device-card{
+  background:var(--bg3);border:1px solid var(--b0);border-radius:var(--radius);
+  padding:18px;cursor:pointer;
+  transition:all .22s ease;
+  animation:cardSlideIn .35s ease forwards;opacity:0;transform:translateY(8px);
+}
+@keyframes cardSlideIn{to{opacity:1;transform:none;}}
+.kanban-cards .device-card:nth-child(1){animation-delay:.03s;}
+.kanban-cards .device-card:nth-child(2){animation-delay:.07s;}
+.kanban-cards .device-card:nth-child(3){animation-delay:.11s;}
+.kanban-cards .device-card:nth-child(4){animation-delay:.15s;}
+.kanban-cards .device-card:nth-child(5){animation-delay:.19s;}
+.kanban-cards .device-card:nth-child(6){animation-delay:.23s;}
+.kanban-cards .device-card:nth-child(7){animation-delay:.27s;}
+
+.device-card:hover{border-color:var(--b1);background:var(--s0);transform:translateY(-2px);}
+.device-card.selected{border-color:var(--b2);background:var(--s0);}
+.device-card.selected::before{
+  content:'';position:absolute;left:0;top:12%;bottom:12%;width:2px;background:var(--t1);border-radius:0 2px 2px 0;
+}
+.device-card{position:relative;}
+
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px;}
+.card-name{font-family:var(--fB);font-size:15px;font-weight:600;color:var(--t0);line-height:1.3;}
+.type-tag{
+  padding:3px 9px;border-radius:5px;flex-shrink:0;
+  font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  background:var(--s2);border:1px solid var(--b1);color:var(--t2);
+}
+
+.card-meta{display:flex;flex-direction:column;gap:5px;}
+.meta-line{display:flex;align-items:center;gap:10px;}
+.mk{font-family:var(--fM);font-size:9px;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;min-width:22px;}
+.mv{font-family:var(--fM);font-size:11px;color:var(--t2);}
+
+.card-foot{
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--b0);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.user-chip{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 9px 4px 4px;border-radius:20px;
+  background:var(--s1);border:1px solid var(--b0);
+}
+.chip-av{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--s2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fC);font-size:9px;font-weight:700;color:var(--t1);
+}
+.chip-name{font-family:var(--fB);font-size:12px;font-weight:500;color:var(--t1);}
+.maker-tag{font-family:var(--fM);font-size:9px;color:var(--t3);}
+
+/* ── Table View ── */
+.table-wrap{background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);overflow:hidden;}
+.data-table{width:100%;border-collapse:collapse;}
+.data-table thead tr{border-bottom:1px solid var(--b0);}
+.data-table th{
+  padding:15px 18px;text-align:left;
+  font-family:var(--fC);font-size:10px;font-weight:600;
+  color:var(--t3);letter-spacing:2px;text-transform:uppercase;
+}
+.data-table td{padding:16px 18px;border-bottom:1px solid var(--b0);vertical-align:middle;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr{cursor:pointer;transition:background .12s;}
+.data-table tbody tr:hover td{background:rgba(0,0,0,.025);}
+.data-table tbody tr.selected td{background:rgba(0,0,0,.04);}
+
+.td-name{font-family:var(--fB);font-size:15px;font-weight:600;color:var(--t0);}
+.td-mono{font-family:var(--fM);font-size:11px;color:var(--t2);}
+.td-dim{font-family:var(--fM);font-size:10px;color:var(--t3);}
+
+.status-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 11px;border-radius:20px;
+  font-family:var(--fC);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+}
+.pill-stored{background:var(--c-stored-bg);border:1px solid var(--c-stored-border);color:var(--c-stored);}
+.pill-inuse{background:var(--c-inuse-bg);border:1px solid var(--c-inuse-border);color:var(--c-inuse);}
+.pill-lent{background:var(--c-lent-bg);border:1px solid var(--c-lent-border);color:var(--c-lent);}
+
+/* ── Detail Panel ── */
+.detail-panel{
+  position:fixed;right:0;top:66px;bottom:0;width:380px;
+  background:var(--bg2);border-left:1px solid var(--b1);
+  transform:translateX(100%);transition:transform .33s cubic-bezier(.4,0,.2,1);
+  z-index:50;display:flex;flex-direction:column;overflow-y:auto;
+  box-shadow:-8px 0 32px rgba(0,0,0,.08);
+}
+.detail-panel.open{transform:translateX(0);}
+
+.panel-hd{
+  padding:28px 28px 22px;border-bottom:1px solid var(--b1);
+  position:sticky;top:0;background:var(--bg2);z-index:1;
+}
+.panel-close{
+  position:absolute;right:22px;top:22px;
+  width:30px;height:30px;border-radius:7px;
+  background:var(--s0);border:1px solid var(--b0);
+  color:var(--t2);display:flex;align-items:center;justify-content:center;
+  font-size:13px;cursor:pointer;transition:all .15s;font-family:var(--fM);
+}
+.panel-close:hover{background:var(--s1);color:var(--t0);}
+
+.panel-icon{
+  width:56px;height:56px;border-radius:14px;
+  background:var(--s0);border:1px solid var(--b1);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  margin-bottom:14px;
+}
+.panel-dname{font-family:var(--fA);font-size:28px;letter-spacing:1px;color:var(--t0);margin-bottom:10px;line-height:1.1;}
+.panel-tags{display:flex;gap:6px;flex-wrap:wrap;}
+
+.panel-body{padding:22px 28px;flex:1;}
+.psec{margin-bottom:26px;}
+.psec-title{
+  font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);
+  letter-spacing:2.5px;text-transform:uppercase;margin-bottom:12px;
+}
+.info-row{
+  display:flex;align-items:center;padding:10px 12px;border-radius:8px;
+  transition:background .12s;
+}
+.info-row:hover{background:rgba(255,255,255,.02);}
+.ik{font-family:var(--fM);font-size:10px;color:var(--t3);min-width:96px;flex-shrink:0;}
+.iv{font-family:var(--fM);font-size:11px;color:var(--t1);}
+
+.adid-box{
+  font-family:var(--fM);font-size:10px;color:var(--t2);
+  background:var(--s0);border:1px solid var(--b0);border-radius:9px;
+  padding:12px 14px;word-break:break-all;line-height:1.8;
+}
+
+.s-btns{display:flex;gap:7px;flex-wrap:wrap;}
+.s-btn{
+  padding:8px 15px;border-radius:8px;border:1px solid var(--b0);background:var(--s0);
+  font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--t2);cursor:pointer;transition:all .18s;
+}
+.s-btn:hover{border-color:var(--b2);color:var(--t0);background:var(--s1);}
+
+.panel-acts{
+  padding:18px 28px 24px;border-top:1px solid var(--b0);
+  display:flex;flex-direction:column;gap:8px;
+}
+.act-btn{
+  padding:12px 16px;border-radius:10px;border:1px solid var(--b1);
+  cursor:pointer;font-family:var(--fA);font-size:17px;letter-spacing:2px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:all .18s;
+}
+.act-btn.primary{background:var(--t0);color:var(--bg);border-color:transparent;}
+.act-btn.primary:hover{background:var(--t1);transform:translateY(-1px);}
+.act-btn.danger{background:transparent;color:var(--t2);border-color:var(--b0);}
+.act-btn.danger:hover{color:var(--t0);border-color:var(--b1);}
+
+/* ── Modal ── */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+  z-index:150;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--b1);border-radius:20px;
+  padding:36px;width:510px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.15);
+  animation:cardIn .28s cubic-bezier(.4,0,.2,1);
+}
+.modal-title{font-family:var(--fA);font-size:36px;letter-spacing:2px;color:var(--t0);margin-bottom:26px;}
+.form-group{margin-bottom:16px;}
+.form-label{
+  font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;display:block;
+}
+.form-input{
+  width:100%;padding:12px 15px;
+  background:var(--s0);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t0);font-family:var(--fB);font-size:14px;font-weight:300;
+  outline:none;transition:all .2s;
+}
+.form-input:focus{border-color:var(--b2);background:var(--s1);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal-acts{display:flex;gap:10px;margin-top:26px;justify-content:flex-end;}
+.btn-cancel{
+  padding:11px 22px;background:var(--s0);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t2);font-family:var(--fC);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  cursor:pointer;transition:all .18s;
+}
+.btn-cancel:hover{background:var(--s1);color:var(--t0);}
+.btn-save{
+  padding:11px 28px;background:var(--t0);border:none;border-radius:10px;
+  color:var(--bg);font-family:var(--fA);font-size:18px;letter-spacing:2px;
+  cursor:pointer;transition:all .18s;
+}
+.btn-save:hover{background:var(--t1);transform:translateY(-1px);}
+
+/* ── Toast ── */
+.toast-container{position:fixed;bottom:28px;right:28px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+.toast{
+  padding:13px 20px;
+  background:var(--s1);border:1px solid var(--b1);border-radius:11px;
+  font-family:var(--fB);font-size:13px;font-weight:400;color:var(--t1);
+  box-shadow:0 12px 40px rgba(0,0,0,.4);
+  display:flex;align-items:center;gap:10px;
+  animation:tIn .28s cubic-bezier(.4,0,.2,1) both;max-width:320px;
+}
+@keyframes tIn{from{transform:translateY(16px) scale(.96);opacity:0;}to{transform:none;opacity:1;}}
+.toast.removing{animation:tOut .25s cubic-bezier(.4,0,.2,1) both;}
+@keyframes tOut{to{transform:translateY(10px) scale(.96);opacity:0;}}
+
+/* ── Empty ── */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:44px;gap:10px;text-align:center;
+}
+.empty-icon{font-size:32px;opacity:.2;}
+.empty-text{font-family:var(--fM);font-size:10px;color:var(--t3);letter-spacing:1.5px;text-transform:uppercase;}
+
+/* page transition */
+.page-in{animation:pgIn .45s cubic-bezier(.4,0,.2,1) both;}
+@keyframes pgIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px;}
+
+/* ════════════════════════════════════════
+   APP BODY LAYOUT — sidebar + content
+════════════════════════════════════════ */
+.app-body{display:flex;flex:1;min-height:0;}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--bg2);border-right:1px solid var(--b1);
+  display:flex;flex-direction:column;
+  padding:24px 16px;gap:4px;
+  position:sticky;top:66px;height:calc(100vh - 66px);overflow-y:auto;
+}
+.sb-section-label{
+  font-family:var(--fC);font-size:10px;font-weight:700;color:var(--t3);
+  letter-spacing:2px;text-transform:uppercase;
+  padding:0 12px;margin:16px 0 6px;
+}
+.sb-section-label:first-child{margin-top:0;}
+.sb-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:10px;border:1px solid transparent;
+  font-family:var(--fC);font-size:13px;font-weight:600;letter-spacing:.5px;
+  color:var(--t2);cursor:pointer;transition:all .18s;
+  position:relative;
+}
+.sb-item:hover{background:var(--s0);color:var(--t0);}
+.sb-item.active{
+  background:var(--s0);border-color:var(--b1);color:var(--t0);
+}
+.sb-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:2px;background:var(--t0);border-radius:0 2px 2px 0;
+}
+.sb-icon{width:18px;height:18px;flex-shrink:0;opacity:.5;}
+.sb-item.active .sb-icon,.sb-item:hover .sb-icon{opacity:1;}
+.sb-divider{height:1px;background:var(--b0);margin:8px 0;}
+
+/* ── Page content wrapper ── */
+.page-content{flex:1;overflow-y:auto;min-width:0;}
+
+/* ── Dashboard page ── */
+#page-dashboard{display:none;}
+#page-dashboard.active{display:block;}
+#page-devices{display:none;}
+#page-devices.active{display:block;}
+
+.dash-inner{
+  max-width:var(--max-w);margin:0 auto;
+  padding:48px var(--pad) 64px;
+  display:flex;flex-direction:column;gap:36px;
+}
+.dash-greeting{
+  display:flex;flex-direction:column;gap:6px;
+}
+.dash-greet-main{
+  font-family:var(--fA);font-size:52px;letter-spacing:1px;line-height:1;color:var(--t0);
+}
+.dash-greet-sub{
+  font-family:var(--fM);font-size:11px;color:var(--t3);letter-spacing:1.5px;
+}
+.dash-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.dash-card{
+  background:var(--bg2);border:1px solid var(--b0);border-radius:var(--radius-lg);
+  padding:32px 28px;display:flex;flex-direction:column;gap:10px;
+  cursor:pointer;transition:all .22s;
+  position:relative;overflow:hidden;
+}
+.dash-card:hover{border-color:var(--b2);transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.08);}
+.dash-card-icon{font-size:28px;margin-bottom:4px;}
+.dash-card-title{font-family:var(--fA);font-size:26px;letter-spacing:1px;color:var(--t0);}
+.dash-card-desc{font-family:var(--fB);font-size:13px;font-weight:300;color:var(--t2);line-height:1.6;}
+.dash-card-arrow{
+  position:absolute;right:24px;bottom:24px;
+  font-family:var(--fC);font-size:18px;color:var(--t3);
+  transition:all .18s;
+}
+.dash-card:hover .dash-card-arrow{color:var(--t0);transform:translateX(4px);}
+.dash-card-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:20px;
+  background:var(--s0);border:1px solid var(--b0);
+  font-family:var(--fC);font-size:11px;font-weight:700;letter-spacing:1px;color:var(--t2);
+  align-self:flex-start;margin-top:4px;
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<!-- ═══════════ LOGIN ═══════════ -->
+<div id="login-screen">
+  <div class="login-wrap">
+
+    <!-- Gear SVG -->
+    <div class="gear-scene">
+      <svg width="120" height="80" viewBox="0 0 120 80" overflow="visible">
+        <!-- left gear -->
+        <g class="gear-left-g" transform="translate(18,60)">
+          <circle r="14" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5"/>
+          <circle r="4" fill="rgba(255,255,255,0.1)"/>
+          <g fill="rgba(255,255,255,0.1)" stroke="none">
+            <rect x="-3" y="-21" width="6" height="8" rx="2"/>
+            <rect x="-3" y="13" width="6" height="8" rx="2"/>
+            <rect x="13" y="-3" width="8" height="6" rx="2"/>
+            <rect x="-21" y="-3" width="8" height="6" rx="2"/>
+            <rect x="7" y="-19" width="6" height="8" rx="2" transform="rotate(45)"/>
+            <rect x="-13" y="-19" width="6" height="8" rx="2" transform="rotate(-45)"/>
+            <rect x="7" y="11" width="6" height="8" rx="2" transform="rotate(-45)"/>
+            <rect x="-13" y="11" width="6" height="8" rx="2" transform="rotate(45)"/>
+          </g>
+        </g>
+        <!-- center gear -->
+        <g class="gear-center-g" transform="translate(60,60)">
+          <circle r="22" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="7"/>
+          <circle r="7" fill="rgba(255,255,255,0.18)"/>
+          <g fill="rgba(255,255,255,0.18)">
+            <rect x="-4.5" y="-32" width="9" height="12" rx="2.5"/>
+            <rect x="-4.5" y="20" width="9" height="12" rx="2.5"/>
+            <rect x="20" y="-4.5" width="12" height="9" rx="2.5"/>
+            <rect x="-32" y="-4.5" width="12" height="9" rx="2.5"/>
+            <rect x="11" y="-29" width="9" height="12" rx="2.5" transform="rotate(45)"/>
+            <rect x="-20" y="-29" width="9" height="12" rx="2.5" transform="rotate(-45)"/>
+            <rect x="11" y="17" width="9" height="12" rx="2.5" transform="rotate(-45)"/>
+            <rect x="-20" y="17" width="9" height="12" rx="2.5" transform="rotate(45)"/>
+          </g>
+        </g>
+        <!-- right gear -->
+        <g class="gear-right-g" transform="translate(102,60)">
+          <circle r="14" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5"/>
+          <circle r="4" fill="rgba(255,255,255,0.1)"/>
+          <g fill="rgba(255,255,255,0.1)">
+            <rect x="-3" y="-21" width="6" height="8" rx="2"/>
+            <rect x="-3" y="13" width="6" height="8" rx="2"/>
+            <rect x="13" y="-3" width="8" height="6" rx="2"/>
+            <rect x="-21" y="-3" width="8" height="6" rx="2"/>
+            <rect x="7" y="-19" width="6" height="8" rx="2" transform="rotate(45)"/>
+            <rect x="-13" y="-19" width="6" height="8" rx="2" transform="rotate(-45)"/>
+            <rect x="7" y="11" width="6" height="8" rx="2" transform="rotate(-45)"/>
+            <rect x="-13" y="11" width="6" height="8" rx="2" transform="rotate(45)"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <div class="login-card">
+      <div class="login-brand">
+        <div style="display:flex;justify-content:center;margin-bottom:12px;">
+          <div class="login-mark">Q</div>
+        </div>
+        <div class="login-title">Q BASE</div>
+        <div class="login-sub">QA Management System</div>
+      </div>
+
+      <div class="login-tabs">
+        <button class="login-tab active" id="tab-login" onclick="switchTab('login')">LOGIN</button>
+        <button class="login-tab" id="tab-create" onclick="switchTab('create')">CREATE</button>
+      </div>
+
+      <!-- Login -->
+      <div id="form-login">
+        <div class="lf-group">
+          <label class="lf-label">ID</label>
+          <input class="lf-input" id="li-id" type="text" placeholder="아이디" autocomplete="off">
+        </div>
+        <div class="lf-group">
+          <label class="lf-label">Password</label>
+          <input class="lf-input" id="li-pw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <div class="login-error" id="login-error">아이디 또는 비밀번호가 올바르지 않습니다.</div>
+        <button class="btn-login" onclick="doLogin()">LOGIN</button>
+        <div class="login-divider">OR</div>
+        <button class="btn-guest" onclick="doGuestLogin()">CONTINUE AS GUEST  ·  VIEW ONLY</button>
+
+        <!-- Pending (admin) -->
+        <div class="pending-section" id="pending-section">
+          <div class="pending-label">// Pending Approvals</div>
+          <div id="pending-list"></div>
+        </div>
+      </div>
+
+      <!-- Create -->
+      <div id="form-create" style="display:none;">
+        <div class="lf-group">
+          <label class="lf-label">Name</label>
+          <input class="lf-input" id="cr-name" type="text" placeholder="홍길동">
+        </div>
+        <div class="lf-group">
+          <label class="lf-label">ID</label>
+          <input class="lf-input" id="cr-id" type="text" placeholder="사용할 아이디" autocomplete="off">
+        </div>
+        <div class="lf-group">
+          <label class="lf-label">Password</label>
+          <input class="lf-input" id="cr-pw" type="password" placeholder="비밀번호">
+        </div>
+        <div class="login-error" id="create-error"></div>
+        <button class="btn-login" onclick="doCreateAccount()">REQUEST ACCOUNT</button>
+        <div class="create-hint">Requires admin approval before login</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo">
+        <div class="logo-mark">Q</div>
+        <div>
+          <div class="logo-wordmark">Q BASE</div>
+          <div class="logo-sub">QA Management System</div>
+        </div>
+      </div>
+
+      <div class="view-switcher">
+        <button class="vsw active" id="vb-kanban" onclick="setViewMode('kanban',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="11" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/></svg>
+          KANBAN
+        </button>
+        <button class="vsw" id="vb-table" onclick="setViewMode('table',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          LIST
+        </button>
+      </div>
+
+      <div class="topbar-right">
+        <div class="tb-stat">
+          <div class="pulse-dot"></div>
+          <span id="lent-count-top">대여 중 3대</span>
+        </div>
+        <div class="user-pill" onclick="showUserMenu()">
+          <div class="user-av" id="topbar-av">A</div>
+          <div>
+            <div class="user-info-name" id="topbar-uname">관리자</div>
+            <div class="user-info-role" id="topbar-urole">ADMIN</div>
+          </div>
+        </div>
+        <button class="btn-add" id="btn-add-top" onclick="openAddModal()">+ ADD</button>
+        <button class="btn-logout" onclick="doLogout()">LOGOUT</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-body">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sb-section-label">메뉴</div>
+      <div class="sb-item active" id="sb-dashboard" onclick="navTo('dashboard')">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        대시보드
+      </div>
+      <div class="sb-item" id="sb-devices" onclick="navTo('devices')">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        Devices
+      </div>
+
+      <div class="sb-divider"></div>
+      <div class="sb-section-label">시스템</div>
+      <div class="sb-item" style="cursor:default;opacity:.5;">
+        <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        더 많은 메뉴 준비 중
+      </div>
+    </nav>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+
+      <!-- ── DASHBOARD PAGE ── -->
+      <div id="page-dashboard">
+        <div class="dash-inner page-in">
+          <div class="dash-greeting">
+            <div class="dash-greet-main" id="dash-greet">안녕하세요</div>
+            <div class="dash-greet-sub" id="dash-date">// Q BASE · QA Management System</div>
+          </div>
+
+          <div class="dash-cards">
+            <div class="dash-card" onclick="navTo('devices')">
+              <div class="dash-card-icon">📱</div>
+              <div class="dash-card-title">Devices</div>
+              <div class="dash-card-desc">시료 현황을 확인하고 대여·사용·보관 상태를 관리합니다.</div>
+              <div class="dash-card-badge">
+                <span class="pulse-dot" style="width:6px;height:6px;"></span>
+                <span id="dash-device-count">14대 등록됨</span>
+              </div>
+              <div class="dash-card-arrow">→</div>
+            </div>
+            <div class="dash-card" style="opacity:.45;cursor:default;">
+              <div class="dash-card-icon">📋</div>
+              <div class="dash-card-title">테스트 케이스</div>
+              <div class="dash-card-desc">테스트 케이스와 실행 결과를 관리합니다.</div>
+              <div class="dash-card-badge">준비 중</div>
+            </div>
+            <div class="dash-card" style="opacity:.45;cursor:default;">
+              <div class="dash-card-icon">🐞</div>
+              <div class="dash-card-title">버그 트래커</div>
+              <div class="dash-card-desc">발견된 버그를 등록하고 이슈를 추적합니다.</div>
+              <div class="dash-card-badge">준비 중</div>
+            </div>
+          </div>
+
+          <!-- Quick stats -->
+          <div class="stat-row">
+            <div class="stat-card" onclick="navTo('devices');filterByStatus('all')">
+              <div class="stat-num" id="dash-stat-total">14</div>
+              <div class="stat-lbl">전체 시료</div>
+              <div class="stat-bar-t"><div class="stat-bar-f" style="width:100%"></div></div>
+            </div>
+            <div class="stat-card" onclick="navTo('devices');filterByStatus('사용중')">
+              <div class="stat-num" id="dash-stat-inuse">5</div>
+              <div class="stat-lbl">사용 중</div>
+              <div class="stat-bar-t"><div class="stat-bar-f" id="dash-bar-inuse" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card" onclick="navTo('devices');filterByStatus('대여중')">
+              <div class="stat-num" id="dash-stat-lent">3</div>
+              <div class="stat-lbl">대여 중</div>
+              <div class="stat-bar-t"><div class="stat-bar-f" id="dash-bar-lent" style="width:0%"></div></div>
+            </div>
+            <div class="stat-card" onclick="navTo('devices');filterByStatus('보관중')">
+              <div class="stat-num" id="dash-stat-stored">6</div>
+              <div class="stat-lbl">보관 중</div>
+              <div class="stat-bar-t"><div class="stat-bar-f" id="dash-bar-stored" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── DEVICES PAGE ── -->
+      <div id="page-devices">
+        <main class="main">
+          <div class="main-inner page-in">
+
+            <!-- Guest Banner -->
+            <div class="guest-banner" id="guest-banner" style="display:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              GUEST MODE — 조회 전용입니다. 데이터 수정·추가·삭제는 불가합니다.
+            </div>
+
+            <!-- Controls -->
+            <div class="controls-row">
+              <div class="search-box">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" placeholder="이름 · 시리얼 · 사용자 검색" id="search-input" oninput="searchDevices(this.value)">
+              </div>
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+                <div class="chips-group">
+                  <span class="chips-label">상태</span>
+                  <div class="chip active" id="fchip-all"   onclick="filterByStatus('all',this)">전체</div>
+                  <div class="chip" id="fchip-use"    onclick="filterByStatus('사용중',this)">사용중</div>
+                  <div class="chip" id="fchip-lent"   onclick="filterByStatus('대여중',this)">대여중</div>
+                  <div class="chip" id="fchip-stored" onclick="filterByStatus('보관중',this)">보관중</div>
+                </div>
+                <div class="chips-group">
+                  <span class="chips-label">형태</span>
+                  <div class="chip active" id="tc-all"  onclick="quickTypeFilter('all',this)">전체</div>
+                  <div class="chip" id="tc-fold" onclick="quickTypeFilter('FOLD',this)">FOLD</div>
+                  <div class="chip" id="tc-flip" onclick="quickTypeFilter('FLIP',this)">FLIP</div>
+                  <div class="chip" id="tc-bar"  onclick="quickTypeFilter('BAR',this)">BAR</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stat-row">
+              <div class="stat-card" onclick="filterByStatus('all')">
+                <div class="stat-num" id="stat-total">14</div>
+                <div class="stat-lbl">전체 시료</div>
+                <div class="stat-bar-t"><div class="stat-bar-f" style="width:100%"></div></div>
+              </div>
+              <div class="stat-card" onclick="filterByStatus('사용중')">
+                <div class="stat-num" id="stat-inuse">5</div>
+                <div class="stat-lbl">사용 중</div>
+                <div class="stat-bar-t"><div class="stat-bar-f" id="bar-inuse" style="width:0%"></div></div>
+              </div>
+              <div class="stat-card" onclick="filterByStatus('대여중')">
+                <div class="stat-num" id="stat-lent">3</div>
+                <div class="stat-lbl">대여 중</div>
+                <div class="stat-bar-t"><div class="stat-bar-f" id="bar-lent" style="width:0%"></div></div>
+              </div>
+              <div class="stat-card" onclick="filterByStatus('보관중')">
+                <div class="stat-num" id="stat-stored">6</div>
+                <div class="stat-lbl">보관 중</div>
+                <div class="stat-bar-t"><div class="stat-bar-f" id="bar-stored" style="width:0%"></div></div>
+              </div>
+            </div>
+
+            <!-- Kanban -->
+            <div id="kanban-view">
+              <div class="kanban-board">
+                <div class="kanban-col">
+                  <div class="kanban-header">
+                    <div class="col-title-wrap"><div class="col-dot dot-stored"></div><div class="col-title">보관중</div></div>
+                    <div class="col-cnt" id="kc-stored">0</div>
+                  </div>
+                  <div class="kanban-cards" id="col-stored"></div>
+                </div>
+                <div class="kanban-col">
+                  <div class="kanban-header">
+                    <div class="col-title-wrap"><div class="col-dot dot-inuse"></div><div class="col-title">사용중</div></div>
+                    <div class="col-cnt" id="kc-inuse">0</div>
+                  </div>
+                  <div class="kanban-cards" id="col-inuse"></div>
+                </div>
+                <div class="kanban-col">
+                  <div class="kanban-header">
+                    <div class="col-title-wrap"><div class="col-dot dot-lent"></div><div class="col-title">대여중</div></div>
+                    <div class="col-cnt" id="kc-lent">0</div>
+                  </div>
+                  <div class="kanban-cards" id="col-lent"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div id="table-view" style="display:none;">
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>시료 명</th><th>형태</th><th>상태</th><th>OS</th>
+                      <th>시리얼 번호</th><th>대여/사용자</th><th>제조사</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </main>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detail-panel">
+  <div class="panel-hd">
+    <button class="panel-close" onclick="closeDetail()">✕</button>
+    <div class="panel-icon" id="panel-icon">📱</div>
+    <div class="panel-dname" id="panel-name">—</div>
+    <div class="panel-tags" id="panel-badges"></div>
+  </div>
+  <div class="panel-body">
+    <div class="psec">
+      <div class="psec-title">기기 정보</div>
+      <div id="panel-info"></div>
+    </div>
+    <div class="psec" id="adid-section" style="display:none;">
+      <div class="psec-title">ADID</div>
+      <div class="adid-box" id="panel-adid"></div>
+    </div>
+    <div class="psec" id="status-change-sec">
+      <div class="psec-title">상태 변경</div>
+      <div class="s-btns">
+        <button class="s-btn" onclick="changeStatus('보관중')">보관중</button>
+        <button class="s-btn" onclick="changeStatus('사용중')">사용중</button>
+        <button class="s-btn" onclick="changeStatus('대여중')">대여중</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel-acts" id="panel-actions">
+    <button class="act-btn primary" onclick="editDevice()">정보 수정</button>
+    <button class="act-btn danger" onclick="deleteDevice()">시료 삭제</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modal-title">새 시료 등록</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">시료 명 *</label><input class="form-input" id="f-name" placeholder="Galaxy S25 Ultra"></div>
+      <div class="form-group"><label class="form-label">제조사</label><input class="form-input" id="f-maker" value="Samsung"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">시료 형태</label><select class="form-input" id="f-type"><option value="BAR">BAR</option><option value="FOLD">FOLD</option><option value="FLIP">FLIP</option></select></div>
+      <div class="form-group"><label class="form-label">시료 상태</label><select class="form-input" id="f-status"><option value="보관중">보관중</option><option value="사용중">사용중</option><option value="대여중">대여중</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">OS</label><input class="form-input" id="f-os" placeholder="A16/O8.0"></div>
+      <div class="form-group"><label class="form-label">시리얼 번호</label><input class="form-input" id="f-serial" placeholder="R3CY..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">대여/사용자</label><input class="form-input" id="f-user" placeholder="홍길동"></div>
+      <div class="form-group"><label class="form-label">USIM</label><input class="form-input" id="f-usim"></div>
+    </div>
+    <div class="form-group"><label class="form-label">ADID</label><input class="form-input" id="f-adid" placeholder="e0807df8-b3be-46d9-..."></div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveDevice()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyATKKSrUm6NKATdZdJeDxhQ5Dj2Q32ujh0",
+  authDomain: "q-base-dev.firebaseapp.com",
+  projectId: "q-base-dev",
+  storageBucket: "q-base-dev.firebasestorage.app",
+  messagingSenderId: "756427289812",
+  appId: "1:756427289812:web:217c6ebb1bfbd1d931f741"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = firebaseConfig.appId;
+
+/* ── Global State Setup ── */
+window.ADMIN_ID = 'wow1324332';
+window.ADMIN_PW = 'djslzja1!';
+window.currentUser = null;
+window.isGuest = false;
+window.seedAttempted = false;
+
+// Initial dummy data for DB seeding
+window.devices = [
+  {id:1,name:'Galaxy Z Fold7',type:'FOLD',status:'사용중',os:'A16/O8.0',serial:'R3CY70YS5MT',adid:'',user:'홍진의',maker:'Samsung',usim:''},
+  {id:2,name:'Galaxy Z Fold4',type:'FOLD',status:'보관중',os:'A15/O7.0',serial:'R3CTB06WAGB',adid:'e0807df8-b3be-46d9-9d30-749a3f7b5c00',user:'',maker:'Samsung',usim:''},
+  {id:3,name:'Galaxy Z Fold3',type:'FOLD',status:'보관중',os:'A14/O6.1',serial:'R3CR80CYWTV',adid:'',user:'',maker:'Samsung',usim:''},
+  {id:4,name:'Galaxy Z Flip7',type:'FLIP',status:'사용중',os:'A16/O8.0',serial:'R3CY70MCMMB',adid:'',user:'김정근',maker:'Samsung',usim:''},
+  {id:5,name:'Galaxy Z Flip6',type:'FLIP',status:'대여중',os:'A14/O6.1.1',serial:'R3CX608JDXH',adid:'',user:'손건희',maker:'Samsung',usim:''},
+  {id:6,name:'Galaxy Z Flip5',type:'FLIP',status:'보관중',os:'A14/O6.1',serial:'R3CW901XR4A',adid:'',user:'',maker:'Samsung',usim:''},
+  {id:7,name:'Galaxy S22 Ultra',type:'BAR',status:'대여중',os:'A14/O6.1',serial:'R3CT60FXMKM',adid:'8ddefb10-4a58-4397-b22c-d2ae342e2a68',user:'김효선',maker:'Samsung',usim:''},
+  {id:8,name:'Galaxy S22',type:'BAR',status:'보관중',os:'A14/O6.0',serial:'R3CRC0ZH5YZ',adid:'',user:'',maker:'Samsung',usim:''},
+  {id:9,name:'Galaxy S25 Ultra',type:'BAR',status:'사용중',os:'A15/O7.0',serial:'R3CY207FC9R',adid:'74a99bcd-5fa5-4e04-817a-68844c3cb649',user:'김정근',maker:'Samsung',usim:''},
+  {id:10,name:'Galaxy S25',type:'BAR',status:'사용중',os:'A16/O8.0',serial:'R3CY205YAVV',adid:'',user:'김지연',maker:'Samsung',usim:''},
+  {id:11,name:'Galaxy Note9',type:'BAR',status:'보관중',os:'A10/O2.5',serial:'R39K80D3GQ',adid:'',user:'김정근',maker:'Samsung',usim:''},
+  {id:12,name:'Galaxy S7',type:'BAR',status:'보관중',os:'A8.0.0/S9.0',serial:'R39HB0BNVJ',adid:'',user:'',maker:'Samsung',usim:''},
+  {id:13,name:'Galaxy A23',type:'BAR',status:'보관중',os:'A14/O6.1',serial:'R59W300942X',adid:'',user:'김정근',maker:'Samsung',usim:''},
+  {id:14,name:'Galaxy S25+',type:'BAR',status:'사용중',os:'A16/O8.0',serial:'R3CY208XTTV',adid:'',user:'이다은',maker:'Samsung',usim:''},
+];
+window.pendingAccounts = [];
+window.nextId = 15;
+window.currentFilter = 'all';
+window.currentTypeFilter = 'all';
+window.currentView = 'kanban';
+window.selectedId = null;
+window.editingId = null;
+window.searchQuery = '';
+
+/* ── Auth Helpers ── */
+// 이메일 없이 ID만으로 로그인하도록 뒷부분을 가상 도메인으로 처리
+window.makeEmail = (id) => id + '@qbase.local';
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', user.uid)).then(docSnap => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        if (userData.approved) {
+           window.currentUser = { ...userData, uid: user.uid };
+           window.isGuest = false;
+           window.setupSubscriptions();
+           window.enterApp();
+        } else {
+           signOut(auth);
+           const err = document.getElementById('login-error');
+           err.textContent = '아직 관리자 승인 대기 중입니다.';
+           err.classList.add('show');
+        }
+      } else {
+         // Fallback if data doesn't exist yet but user is logged in
+         const isSysAdmin = user.email === window.makeEmail(window.ADMIN_ID);
+         window.currentUser = { name: isSysAdmin ? '관리자' : (user.displayName || 'User'), role: isSysAdmin ? 'admin' : 'member', uid: user.uid, approved: true };
+         window.isGuest = false;
+         window.setupSubscriptions();
+         window.enterApp();
+      }
+    }).catch(err => console.error("Error fetching user data", err));
+  }
+});
+
+window.setupSubscriptions = function() {
+    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'devices'), (snapshot) => {
+        const newDevices = [];
+        snapshot.forEach(d => newDevices.push({ id: d.id, ...d.data() }));
+        
+        // 처음 연결 시, DB가 비어있고 관리자 계정이면 더미 데이터 세팅(Seed)
+        if (newDevices.length === 0 && window.currentUser && window.currentUser.role === 'admin' && window.devices.length > 0 && !window.seedAttempted) {
+            window.seedAttempted = true;
+            window.devices.forEach(d => {
+                const dCopy = { ...d };
+                delete dCopy.id;
+                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(d.id)), dCopy)
+                    .catch(e => console.error("초기 데이터 생성 오류:", e));
+            });
+        } else if (newDevices.length > 0) {
+            window.devices = newDevices;
+            if (document.getElementById('app').classList.contains('visible')) {
+                window.renderAll();
+            }
+        }
+    }, (error) => {
+        console.error("Firestore 실시간 연동 에러:", error);
+        window.showToast("데이터베이스 읽기 권한이 없습니다. Firestore 보안 규칙을 확인하세요.", "info");
+    });
+
+    if (window.currentUser && window.currentUser.role === 'admin') {
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts'), (snapshot) => {
+            window.pendingAccounts = [];
+            snapshot.forEach(d => window.pendingAccounts.push({ _docId: d.id, ...d.data() }));
+            window.renderPending();
+        }, (error) => {
+            console.error("승인 대기 계정 읽기 에러:", error);
+        });
+    }
+};
+
+window.switchTab = function(t){
+  ['login','create'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active', x===t);
+    document.getElementById('form-'+x).style.display = x===t ? '' : 'none';
+  });
+};
+
+window.doLogin = function(){
+  const id=document.getElementById('li-id').value.trim();
+  const pw=document.getElementById('li-pw').value;
+  const err=document.getElementById('login-error');
+  err.classList.remove('show');
+
+  // Hardcoded Admin Create & Login
+  if(id === window.ADMIN_ID && pw === window.ADMIN_PW) {
+     signInWithEmailAndPassword(auth, window.makeEmail(id), pw)
+     .catch((err1) => {
+         // 파이어베이스 설정 비활성화 에러 시 관리자 강제 접속 처리
+         if(err1.code === 'auth/operation-not-allowed') {
+             window.currentUser = { id: id, name: '관리자', role: 'admin', uid: 'admin_bypass', approved: true };
+             window.isGuest = false;
+             window.setupSubscriptions();
+             window.enterApp();
+             return;
+         }
+         createUserWithEmailAndPassword(auth, window.makeEmail(id), pw)
+         .then((userCredential) => {
+             const uid = userCredential.user.uid;
+             setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', uid), {
+                 id: id, name: '관리자', role: 'admin', approved: true
+             });
+         })
+         .catch(e => { 
+             // 생성 시에도 설정 비활성화 에러면 강제 접속 처리
+             if(e.code === 'auth/operation-not-allowed') {
+                 window.currentUser = { id: id, name: '관리자', role: 'admin', uid: 'admin_bypass', approved: true };
+                 window.isGuest = false;
+                 window.setupSubscriptions();
+                 window.enterApp();
+             } else {
+                 err.textContent = '로그인 실패: ' + e.message; err.classList.add('show'); 
+             }
+         });
+     });
+     return;
+  }
+
+  // Regular users
+  signInWithEmailAndPassword(auth, window.makeEmail(id), pw)
+  .catch(e => {
+      err.textContent = '아이디 또는 비밀번호가 올바르지 않습니다.';
+      err.classList.add('show');
+  });
+};
+
+window.doGuestLogin = function(){
+  window.currentUser={name:'GUEST',role:'guest'}; window.isGuest=true; window.enterApp();
+};
+
+window.doCreateAccount = function(){
+  const name=document.getElementById('cr-name').value.trim();
+  const id=document.getElementById('cr-id').value.trim();
+  const pw=document.getElementById('cr-pw').value;
+  const err=document.getElementById('create-error');
+  err.classList.remove('show');
+  if(!name||!id||!pw){err.textContent='모든 항목을 입력해주세요.';err.classList.add('show');return;}
+  
+  const docRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts'));
+  setDoc(docRef, { id, pw, name, role: 'member', approved: false }).then(() => {
+      window.showToast(`"${name}" 계정 등록 요청이 접수되었습니다.`,'info');
+      document.getElementById('cr-name').value='';document.getElementById('cr-id').value='';document.getElementById('cr-pw').value='';
+      window.switchTab('login');
+  }).catch(e => {
+      err.textContent = '오류 발생: ' + e.message; err.classList.add('show');
+  });
+};
+
+window.navTo = function(page){
+  document.getElementById('page-dashboard').classList.toggle('active', page==='dashboard');
+  document.getElementById('page-devices').classList.toggle('active', page==='devices');
+  document.getElementById('sb-dashboard').classList.toggle('active', page==='dashboard');
+  document.getElementById('sb-devices').classList.toggle('active', page==='devices');
+  const onDevices = page==='devices';
+  document.querySelector('.view-switcher').style.visibility = onDevices ? '' : 'hidden';
+  if(!window.isGuest) document.getElementById('btn-add-top').style.display = onDevices ? '' : 'none';
+  if(page==='devices') window.renderAll();
+  if(page==='dashboard') window.updateDashStats();
+};
+
+window.updateDashStats = function(){
+  const total=window.devices.length;
+  const inUse=window.devices.filter(d=>d.status==='사용중').length;
+  const lent=window.devices.filter(d=>d.status==='대여중').length;
+  const stored=window.devices.filter(d=>d.status==='보관중').length;
+  const dg=document.getElementById('dash-stat-total'); if(dg) dg.textContent=total;
+  const di=document.getElementById('dash-stat-inuse'); if(di) di.textContent=inUse;
+  const dl=document.getElementById('dash-stat-lent');  if(dl) dl.textContent=lent;
+  const ds=document.getElementById('dash-stat-stored');if(ds) ds.textContent=stored;
+  const dc=document.getElementById('dash-device-count');if(dc) dc.textContent=`${total}대 등록됨`;
+  setTimeout(()=>{
+    const bi=document.getElementById('dash-bar-inuse'); if(bi) bi.style.width=`${(inUse/total*100).toFixed(0)}%`;
+    const bl=document.getElementById('dash-bar-lent');  if(bl) bl.style.width=`${(lent/total*100).toFixed(0)}%`;
+    const bst=document.getElementById('dash-bar-stored');if(bst) bst.style.width=`${(stored/total*100).toFixed(0)}%`;
+  },130);
+};
+
+window.enterApp = function(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').classList.add('visible');
+  const av=document.getElementById('topbar-av');
+  av.textContent=window.currentUser.name.charAt(0).toUpperCase();
+  document.getElementById('topbar-uname').textContent=window.currentUser.name;
+  document.getElementById('topbar-urole').textContent=window.isGuest?'GUEST':window.currentUser.role.toUpperCase();
+  document.getElementById('guest-banner').style.display=window.isGuest?'flex':'none';
+  document.getElementById('btn-add-top').style.display=window.isGuest?'none':'';
+  document.getElementById('panel-actions').style.display=window.isGuest?'none':'';
+  document.getElementById('status-change-sec').style.display=window.isGuest?'none':'';
+  const greet=document.getElementById('dash-greet');
+  if(greet) greet.textContent=`안녕하세요, ${window.currentUser.name}님`;
+  const now=new Date();
+  const dateEl=document.getElementById('dash-date');
+  if(dateEl) dateEl.textContent=`// ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} · Q BASE`;
+  window.renderPending();
+  window.navTo('dashboard');
+};
+
+window.doLogout = function(){
+  signOut(auth).then(() => {
+    window.currentUser=null;window.isGuest=false;window.selectedId=null;
+    window.closeDetail();
+    document.getElementById('page-dashboard').classList.remove('active');
+    document.getElementById('page-devices').classList.remove('active');
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('li-id').value='';document.getElementById('li-pw').value='';
+    document.getElementById('login-error').classList.remove('show');
+  });
+};
+
+window.renderPending = function(){
+  if(!window.currentUser||window.currentUser.role!=='admin') return;
+  const sec=document.getElementById('pending-section');
+  const list=document.getElementById('pending-list');
+  if(!window.pendingAccounts.length){sec.classList.remove('show');return;}
+  sec.classList.add('show'); list.innerHTML='';
+  window.pendingAccounts.forEach((a,i)=>{
+    const el=document.createElement('div');
+    el.className='pending-item';
+    el.innerHTML=`<div><div class="pending-name">${a.name}</div><div class="pending-id">${a.id}</div></div><div class="pending-acts"><button class="btn-approve" onclick="approveAccount(${i})">APPROVE</button><button class="btn-reject" onclick="rejectAccount(${i})">REJECT</button></div>`;
+    list.appendChild(el);
+  });
+};
+
+window.approveAccount = function(i){
+  const a = window.pendingAccounts[i];
+  createUserWithEmailAndPassword(auth, window.makeEmail(a.id), a.pw)
+  .then((userCredential) => {
+      const uid = userCredential.user.uid;
+      setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'accounts', uid), {
+          id: a.id, name: a.name, role: a.role, approved: true
+      });
+      deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts', a._docId));
+      window.showToast(`"${a.name}" 계정이 승인되었습니다.`,'info');
+  })
+  .catch(e => {
+      window.showToast(`승인 실패: ` + e.message, 'info');
+  });
+};
+
+window.rejectAccount = function(i){
+  const a = window.pendingAccounts[i];
+  deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pendingAccounts', a._docId));
+  window.showToast(`"${a.name}" 요청을 거절했습니다.`,'info');
+};
+
+window.showUserMenu = function(){
+  if(window.currentUser&&window.currentUser.role==='admin'&&window.pendingAccounts.length>0)
+    window.showToast(`대기 중인 계정 요청 ${window.pendingAccounts.length}건 — 로그인 화면에서 확인하세요.`,'info');
+};
+
+window.getTypeIcon = function(t){return t==='FLIP'?'📲':'📱';};
+window.getTypeBadge = function(t){return `<span class="type-tag">${t}</span>`;};
+window.getStatusPill = function(s){
+  const c=s==='사용중'?'inuse':s==='대여중'?'lent':'stored';
+  const dot=s==='사용중'?'dot-inuse':s==='대여중'?'dot-lent':'dot-stored';
+  return `<span class="status-pill pill-${c}"><span class="col-dot ${dot}" style="width:5px;height:5px;flex-shrink:0;"></span>${s}</span>`;
+};
+window.getUserChip = function(d){
+  if(!d.user) return `<span class="maker-tag">—</span>`;
+  return `<div class="user-chip"><div class="chip-av">${d.user.charAt(0)}</div><span class="chip-name">${d.user}</span></div>`;
+};
+window.getFiltered = function(){
+  return window.devices.filter(d=>{
+    const sm=window.currentFilter==='all'||d.status===window.currentFilter;
+    const tm=window.currentTypeFilter==='all'||d.type===window.currentTypeFilter;
+    const qm=!window.searchQuery||d.name.toLowerCase().includes(window.searchQuery)||(d.serial&&d.serial.toLowerCase().includes(window.searchQuery))||(d.user&&d.user.toLowerCase().includes(window.searchQuery));
+    return sm&&tm&&qm;
+  });
+};
+
+window.renderKanban = function(){
+  const f=window.getFiltered();
+  const cols={'보관중':[],'사용중':[],'대여중':[]};
+  f.forEach(d=>cols[d.status]&&cols[d.status].push(d));
+  [['보관중','stored'],['사용중','inuse'],['대여중','lent']].forEach(([s,k])=>{
+    const col=document.getElementById('col-'+k);
+    document.getElementById('kc-'+k).textContent=cols[s].length;
+    col.innerHTML='';
+    if(!cols[s].length){
+      col.innerHTML='<div class="empty-state"><div class="empty-icon">○</div><div class="empty-text">No Devices</div></div>';
+    } else {
+      cols[s].forEach(d=>{
+        const el=document.createElement('div');
+        el.className='device-card'+(window.selectedId===d.id?' selected':'');
+        el.innerHTML=`
+          <div class="card-top"><div class="card-name">${d.name}</div>${window.getTypeBadge(d.type)}</div>
+          <div class="card-meta">
+            <div class="meta-line"><span class="mk">OS</span><span class="mv">${d.os}</span></div>
+            <div class="meta-line"><span class="mk">S/N</span><span class="mv">${d.serial}</span></div>
+          </div>
+          <div class="card-foot">${window.getUserChip(d)}<span class="maker-tag">${d.maker}</span></div>`;
+        el.onclick=()=>window.selectDevice(d.id);
+        col.appendChild(el);
+      });
+    }
+  });
+};
+
+window.renderTable = function(){
+  const f=window.getFiltered();
+  const tbody=document.getElementById('table-body');
+  tbody.innerHTML='';
+  f.forEach(d=>{
+    const tr=document.createElement('tr');
+    if(window.selectedId===d.id) tr.classList.add('selected');
+    tr.innerHTML=`
+      <td class="td-name">${d.name}</td>
+      <td>${window.getTypeBadge(d.type)}</td>
+      <td>${window.getStatusPill(d.status)}</td>
+      <td class="td-mono">${d.os}</td>
+      <td class="td-dim">${d.serial}</td>
+      <td>${d.user?window.getUserChip(d):'<span class="td-dim">—</span>'}</td>
+      <td class="td-dim">${d.maker}</td>`;
+    tr.onclick=()=>window.selectDevice(d.id);
+    tbody.appendChild(tr);
+  });
+};
+
+window.renderAll = function(){
+  window.updateStats();
+  if(window.currentView==='kanban') window.renderKanban(); else window.renderTable();
+};
+
+window.updateStats = function(){
+  const total=window.devices.length;
+  const inUse=window.devices.filter(d=>d.status==='사용중').length;
+  const lent=window.devices.filter(d=>d.status==='대여중').length;
+  const stored=window.devices.filter(d=>d.status==='보관중').length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-inuse').textContent=inUse;
+  document.getElementById('stat-lent').textContent=lent;
+  document.getElementById('stat-stored').textContent=stored;
+  document.getElementById('lent-count-top').textContent=`대여 중 ${lent}대`;
+  setTimeout(()=>{
+    document.getElementById('bar-inuse').style.width=`${(inUse/total*100).toFixed(0)}%`;
+    document.getElementById('bar-lent').style.width=`${(lent/total*100).toFixed(0)}%`;
+    document.getElementById('bar-stored').style.width=`${(stored/total*100).toFixed(0)}%`;
+  },130);
+};
+
+window.selectDevice = function(id){
+  window.selectedId=id; window.renderAll();
+  const d=window.devices.find(x=>x.id===id); if(!d) return;
+  document.getElementById('panel-icon').textContent=window.getTypeIcon(d.type);
+  document.getElementById('panel-name').textContent=d.name;
+  document.getElementById('panel-badges').innerHTML=`${window.getTypeBadge(d.type)} ${window.getStatusPill(d.status)}`;
+  document.getElementById('panel-info').innerHTML=`
+    <div class="info-row"><span class="ik">시료 명</span><span class="iv">${d.name}</span></div>
+    <div class="info-row"><span class="ik">시료 형태</span><span class="iv">${d.type}</span></div>
+    <div class="info-row"><span class="ik">시료 상태</span><span class="iv">${d.status}</span></div>
+    <div class="info-row"><span class="ik">OS</span><span class="iv">${d.os}</span></div>
+    <div class="info-row"><span class="ik">시리얼 번호</span><span class="iv">${d.serial||'—'}</span></div>
+    <div class="info-row"><span class="ik">대여/사용자</span><span class="iv">${d.user||'—'}</span></div>
+    <div class="info-row"><span class="ik">제조사</span><span class="iv">${d.maker}</span></div>
+    <div class="info-row"><span class="ik">USIM</span><span class="iv">${d.usim||'—'}</span></div>`;
+  const as=document.getElementById('adid-section');
+  if(d.adid){as.style.display='block';document.getElementById('panel-adid').textContent=d.adid;}
+  else as.style.display='none';
+  document.getElementById('detail-panel').classList.add('open');
+};
+
+window.closeDetail = function(){
+  document.getElementById('detail-panel').classList.remove('open');
+  window.selectedId=null; window.renderAll();
+};
+
+window.changeStatus = function(ns){
+  if(window.isGuest){window.showToast('게스트는 수정할 수 없습니다.','info');return;}
+  if(!window.selectedId) return;
+  const d=window.devices.find(x=>x.id===window.selectedId);
+  
+  updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(window.selectedId)), { status: ns })
+  .then(() => {
+      d.status = ns; // Optimistic
+      window.selectDevice(window.selectedId);
+      window.showToast(`${d.name} → ${ns}`,'info');
+  }).catch(e => {
+      console.error("상태 변경 오류:", e);
+      window.showToast("상태 변경 실패: 데이터베이스 쓰기 권한이 없습니다.", "info");
+  });
+};
+
+window.setViewMode = function(mode){
+  window.currentView=mode;
+  document.getElementById('kanban-view').style.display=mode==='kanban'?'block':'none';
+  document.getElementById('table-view').style.display=mode==='table'?'block':'none';
+  ['kanban','table'].forEach(m=>{const b=document.getElementById('vb-'+m);if(b)b.classList.toggle('active',m===mode);});
+  window.renderAll();
+};
+
+window.filterByStatus = function(status){
+  window.currentFilter=status;
+  document.querySelectorAll('.chip[id^="fchip"]').forEach(c=>c.classList.remove('active'));
+  const map={all:'fchip-all','사용중':'fchip-use','대여중':'fchip-lent','보관중':'fchip-stored'};
+  const chip=document.getElementById(map[status]); if(chip) chip.classList.add('active');
+  window.renderAll();
+};
+
+window.quickTypeFilter = function(type){
+  window.currentTypeFilter=type==='all'?'all':type;
+  document.querySelectorAll('[id^="tc-"]').forEach(c=>c.classList.remove('active'));
+  const map={all:'tc-all',FOLD:'tc-fold',FLIP:'tc-flip',BAR:'tc-bar'};
+  const chip=document.getElementById(map[type]); if(chip) chip.classList.add('active');
+  window.renderAll();
+};
+
+window.searchDevices = function(val){window.searchQuery=val.toLowerCase();window.renderAll();};
+
+window.openAddModal = function(){
+  if(window.isGuest){window.showToast('게스트는 추가할 수 없습니다.','info');return;}
+  window.editingId=null;
+  document.getElementById('modal-title').textContent='새 시료 등록';
+  ['name','os','serial','user','adid','usim'].forEach(f=>{const el=document.getElementById('f-'+f);if(el)el.value='';});
+  document.getElementById('f-maker').value='Samsung';
+  document.getElementById('f-type').value='BAR';
+  document.getElementById('f-status').value='보관중';
+  document.getElementById('modal-overlay').classList.add('open');
+};
+
+window.editDevice = function(){
+  if(!window.selectedId) return;
+  const d=window.devices.find(x=>x.id===window.selectedId);
+  window.editingId=window.selectedId;
+  document.getElementById('modal-title').textContent='시료 정보 수정';
+  document.getElementById('f-name').value=d.name;
+  document.getElementById('f-type').value=d.type;
+  document.getElementById('f-status').value=d.status;
+  document.getElementById('f-os').value=d.os;
+  document.getElementById('f-serial').value=d.serial;
+  document.getElementById('f-user').value=d.user;
+  document.getElementById('f-maker').value=d.maker;
+  document.getElementById('f-adid').value=d.adid;
+  document.getElementById('f-usim').value=d.usim||'';
+  document.getElementById('modal-overlay').classList.add('open');
+};
+
+window.saveDevice = function(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){window.showToast('시료 명을 입력하세요.','info');return;}
+  const data={
+      name,
+      type:document.getElementById('f-type').value,
+      status:document.getElementById('f-status').value,
+      os:document.getElementById('f-os').value.trim(),
+      serial:document.getElementById('f-serial').value.trim(),
+      user:document.getElementById('f-user').value.trim(),
+      maker:document.getElementById('f-maker').value.trim()||'Samsung',
+      adid:document.getElementById('f-adid').value.trim(),
+      usim:document.getElementById('f-usim').value.trim()
+  };
+  
+  if(window.editingId){
+      updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(window.editingId)), data)
+      .then(() => {
+          window.showToast(`${name} 수정 완료`,'info');
+          const idx = window.devices.findIndex(d=>d.id===window.editingId);
+          if(idx !== -1) window.devices[idx] = { ...window.devices[idx], ...data };
+          window.selectDevice(window.editingId);
+      }).catch(e => {
+          console.error("수정 오류:", e);
+          window.showToast("수정 실패: 데이터베이스 쓰기 권한을 확인하세요.", "info");
+      });
+  } else {
+      const newDocRef = doc(collection(db, 'artifacts', appId, 'public', 'data', 'devices'));
+      setDoc(newDocRef, data).then(() => {
+         window.showToast(`${name} 등록 완료`,'info');
+      }).catch(e => {
+          console.error("등록 오류:", e);
+          window.showToast("등록 실패: 데이터베이스 쓰기 권한을 확인하세요.", "info");
+      });
+  }
+  window.closeModal();
+};
+
+window.deleteDevice = function() {
+    if(!window.selectedId) return;
+    const d = window.devices.find(x => x.id === window.selectedId);
+    
+    // Custom Confirm Modal to strictly avoid browser confirm()
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay open';
+    overlay.style.zIndex = '9999';
+    overlay.innerHTML = `
+        <div class="modal" onclick="event.stopPropagation()" style="width: 400px; padding: 28px;">
+            <div class="modal-title" style="font-size: 24px; margin-bottom: 16px;">삭제 확인</div>
+            <div style="font-family: var(--fB); font-size: 14px; color: var(--t1); margin-bottom: 24px;">
+                "${d.name}" 시료를 정말 삭제하시겠습니까?<br><span style="color:var(--t3);font-size:12px;">이 작업은 되돌릴 수 없습니다.</span>
+            </div>
+            <div class="modal-acts" style="margin-top:0;">
+                <button class="btn-cancel" id="btn-cfm-cancel">취소</button>
+                <button class="btn-save" style="background: #e53e3e;" id="btn-cfm-delete">삭제</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    document.getElementById('btn-cfm-cancel').onclick = () => overlay.remove();
+    document.getElementById('btn-cfm-delete').onclick = () => {
+        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'devices', String(window.selectedId)))
+        .then(() => {
+            window.closeDetail();
+            window.showToast(`${d.name} 삭제 완료`, 'info');
+            overlay.remove();
+        }).catch(e => {
+            console.error("삭제 오류:", e);
+            window.showToast("삭제 실패: 데이터베이스 쓰기 권한을 확인하세요.", "info");
+            overlay.remove();
+        });
+    };
+};
+
+window.closeModal = function(e){
+  if(e&&e.target!==document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+};
+
+window.showToast = function(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<span style="color:var(--t2);font-size:14px;">◆</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.classList.add('removing');setTimeout(()=>t.remove(),260);},2600);
+};
+</script>
+</body>
+</html>
