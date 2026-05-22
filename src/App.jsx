@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 
 // === CSS Styles for Cinematic Animations ===
-// In a real Vite project, these would go in index.css
 const globalStyles = `
   @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
 
@@ -17,7 +16,6 @@ const globalStyles = `
     overflow: hidden;
   }
 
-  /* Smooth Fade In and Up */
   @keyframes cinematicFadeIn {
     0% { opacity: 0; transform: translateY(15px); filter: blur(4px); }
     100% { opacity: 1; transform: translateY(0); filter: blur(0); }
@@ -26,7 +24,6 @@ const globalStyles = `
     animation: cinematicFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
   }
 
-  /* Just Fade */
   @keyframes simpleFade {
     0% { opacity: 0; }
     100% { opacity: 1; }
@@ -35,7 +32,6 @@ const globalStyles = `
     animation: simpleFade 0.5s ease-in-out forwards;
   }
 
-  /* Breathing Animation for Hovers */
   @keyframes breathing {
     0% { box-shadow: 0 0 0px rgba(156, 163, 175, 0); border-color: transparent; }
     50% { box-shadow: 0 0 15px rgba(156, 163, 175, 0.4); border-color: rgba(209, 213, 219, 0.8); }
@@ -49,7 +45,6 @@ const globalStyles = `
     transform: translateY(-2px);
   }
 
-  /* Subtly animated gradient background for Splash */
   @keyframes gradientBG {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -61,7 +56,6 @@ const globalStyles = `
     animation: gradientBG 10s ease infinite;
   }
 
-  /* Hide Scrollbar but keep functionality */
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -79,7 +73,6 @@ const INITIAL_DEVICES = [
   { id: 'd5', name: 'iPhone 13 Mini', type: 'Bar', os: 'iOS', status: '보관중', renter: '', manufacturer: 'Apple' },
 ];
 
-// Custom Toast Notification
 const Toast = ({ message, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -96,7 +89,6 @@ const Toast = ({ message, onClose }) => {
 
 const SplashScreen = ({ onComplete }) => {
   useEffect(() => {
-    // 3초 후 완료 (기획서: 시네마틱한 로딩 3~4초 확보)
     const timer = setTimeout(onComplete, 3000);
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -104,11 +96,10 @@ const SplashScreen = ({ onComplete }) => {
   return (
     <div className="w-screen h-screen bg-cinematic flex flex-col items-center justify-center animate-simple-fade">
       <div className="animate-fade-in flex flex-col items-center">
-        <img src="/icon-192x192.png" alt="QA Base Icon" className="w-32 h-32 object-contain mb-6 drop-shadow-xl" />
+        <img src="/icon-192x192.png" alt="QA Base App Icon" className="w-28 h-28 mb-6 drop-shadow-xl animate-pulse" />
         <h1 className="text-4xl font-light tracking-widest text-gray-800 mb-2">QA BASE</h1>
         <p className="text-sm text-gray-500 tracking-wider">Quality Assurance Command Center</p>
         
-        {/* Loading Bar */}
         <div className="w-48 h-1 bg-gray-200 rounded-full mt-12 overflow-hidden">
           <div className="h-full bg-gray-600 rounded-full w-full origin-left animate-[scaleX_3s_ease-in-out]"></div>
         </div>
@@ -121,15 +112,18 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
   const [tab, setTab] = useState('login');
   const [id, setId] = useState('');
   const [pw, setPw] = useState('');
+  const [name, setName] = useState('');
   const [remember, setRemember] = useState(false);
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (id === 'wow1324332' && pw === 'djslzja1!') {
-      onLogin({ id, name: 'ADMIN', role: 'admin' });
+    const cleanId = id.trim();
+    const cleanPw = pw.trim();
+    
+    if (cleanId === 'wow1324332' && cleanPw === 'djslzja1!') {
+      onLogin({ id: cleanId, name: 'ADMIN', role: 'admin' });
     } else {
-      // For prototype, any other login is treated as user
-      onLogin({ id: id || 'user', name: id || 'User', role: 'user' });
+      onLogin({ id: cleanId || 'user', name: name.trim() || '사용자', role: 'user' });
     }
   };
 
@@ -139,23 +133,20 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
 
   return (
     <div className="w-screen h-screen bg-[#f0f2f5] flex items-center justify-center relative animate-simple-fade">
-      {/* PWA Install Button */}
       <button 
         onClick={onInstallApp}
-        className="absolute top-8 right-8 flex items-center space-x-2 text-gray-500 hover:text-gray-800 transition-colors bg-white/50 px-4 py-2 rounded-full backdrop-blur hover-breath"
+        className="absolute top-8 right-8 flex items-center space-x-2 text-gray-500 hover:text-gray-800 transition-colors bg-white/50 px-4 py-2 rounded-full backdrop-blur hover-breath shadow-sm"
       >
         <Download className="w-4 h-4" />
         <span className="text-xs font-medium tracking-wide">앱 설치</span>
       </button>
 
-      {/* Cinematic wide background feel, small focused modal */}
       <div className="w-full max-w-[380px] bg-white/80 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.05)] border border-white p-8 animate-fade-in relative z-10">
         
         <div className="flex justify-center mb-8">
-          <img src="/icon-192x192.png" alt="QA Base Icon" className="w-20 h-20 object-contain drop-shadow-md" />
+          <img src="/icon-192x192.png" alt="QA Base App Icon" className="w-20 h-20 drop-shadow-lg" />
         </div>
 
-        {/* Tabs */}
         <div className="flex w-full mb-8 relative border-b border-gray-200">
           <button 
             className={`flex-1 pb-3 text-sm font-medium transition-colors ${tab === 'login' ? 'text-gray-900' : 'text-gray-400 hover:text-gray-600'}`}
@@ -169,7 +160,6 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
           >
             Create
           </button>
-          {/* Active indicator */}
           <div className={`absolute bottom-0 h-[2px] bg-gray-800 w-1/2 transition-transform duration-300 ease-out ${tab === 'login' ? 'translate-x-0' : 'translate-x-full'}`}></div>
         </div>
 
@@ -180,7 +170,7 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
               placeholder="ID" 
               value={id}
               onChange={(e) => setId(e.target.value)}
-              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400 shadow-sm"
             />
           </div>
           <div>
@@ -189,7 +179,7 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
               placeholder="Password" 
               value={pw}
               onChange={(e) => setPw(e.target.value)}
-              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+              className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400 shadow-sm"
             />
           </div>
           
@@ -198,7 +188,9 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
               <input 
                 type="text" 
                 placeholder="Name" 
-                className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-3 outline-none focus:border-gray-400 focus:bg-white transition-all placeholder:text-gray-400 shadow-sm"
               />
             </div>
           )}
@@ -226,7 +218,7 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
             <button 
               type="button" 
               onClick={handleGuest}
-              className="w-full bg-white text-gray-600 border border-gray-200 text-sm font-medium py-3 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors"
+              className="w-full bg-white text-gray-600 border border-gray-200 text-sm font-medium py-3 rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
             >
               게스트로 시작 (Viewer)
             </button>
@@ -234,7 +226,6 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
         </form>
       </div>
       
-      {/* Decorative background shapes */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gray-200/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gray-300/40 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-pulse" style={{ animationDelay: '2s'}}></div>
     </div>
@@ -243,7 +234,6 @@ const LoginScreen = ({ onLogin, onInstallApp }) => {
 
 const TransitionLoading = ({ title, onComplete }) => {
   useEffect(() => {
-    // 기능 이동 시 로딩은 피로도를 줄이기 위해 짧게(1.5초) 조정
     const timer = setTimeout(onComplete, 1500);
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -259,52 +249,57 @@ const TransitionLoading = ({ title, onComplete }) => {
   );
 };
 
-const FunctionalBoard = ({ user, onNavigate, onLogout }) => {
+const FunctionalBoard = ({ user, onNavigate, onLogout, onShowToast, onUpdateUser }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const onlineUsersCount = 12; // Mock data
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [onlineUsersCount, setOnlineUsersCount] = useState(1); 
 
   return (
     <div className="w-screen h-screen bg-[#f8f9fa] flex flex-col animate-simple-fade">
-      {/* Cinematic Header */}
-      <header className="h-20 px-8 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-gray-100">
+      <header className="h-20 px-8 flex justify-between items-center bg-white/50 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center">
-            <MonitorSmartphone className="w-5 h-5 text-gray-800" strokeWidth={1.5} />
-          </div>
+          <img src="/icon-192x192.png" alt="QA Base" className="w-10 h-10 drop-shadow-md" />
           <span className="text-xl font-medium tracking-wider text-gray-800">QA BASE</span>
         </div>
 
         <div className="flex items-center space-x-6">
-          {/* Online Users Badge */}
-          <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-sm hover-breath cursor-default">
+          <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-full border border-gray-100 shadow-md hover-breath cursor-default">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
             <Users className="w-4 h-4 text-gray-500" />
             <span className="text-xs font-medium text-gray-600">{onlineUsersCount}명 접속중</span>
           </div>
 
-          {/* Admin Settings Icon (Only for Admin) */}
           {user.role === 'admin' && (
-            <button className="p-2 text-gray-400 hover:text-gray-800 transition-colors hover-breath rounded-full">
+            <button 
+              onClick={() => setShowAdminModal(true)}
+              className="p-2 text-gray-400 hover:text-gray-800 transition-colors hover-breath rounded-full shadow-sm bg-white"
+            >
               <Settings className="w-5 h-5" />
             </button>
           )}
 
-          {/* Profile */}
           <div className="relative">
             <div 
-              className="flex items-center space-x-3 cursor-pointer hover-breath p-1 pr-3 bg-white rounded-full border border-gray-100 shadow-sm"
+              className="flex items-center space-x-3 cursor-pointer hover-breath p-1 pr-3 bg-white rounded-full border border-gray-100 shadow-md"
               onClick={() => setShowProfileMenu(!showProfileMenu)}
             >
-              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-xs font-medium">
-                {user.name.charAt(0)}
+              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center text-white text-xs font-medium overflow-hidden">
+                {user.profileImg ? (
+                  <img src={user.profileImg} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user.name === 'ADMIN' ? 'A' : user.name.charAt(0)
+                )}
               </div>
               <span className="text-sm font-medium text-gray-700">{user.name}</span>
             </div>
 
-            {/* Profile Dropdown */}
             {showProfileMenu && (
-              <div className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-gray-100 py-2 animate-fade-in z-50">
-                <button className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex items-center">
+              <div className="absolute right-0 mt-3 w-48 bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_15px_50px_rgba(0,0,0,0.12)] border border-gray-100 py-2 animate-fade-in z-50">
+                <button 
+                  onClick={() => { setShowProfileMenu(false); setShowProfileModal(true); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors flex items-center"
+                >
                   <User className="w-4 h-4 mr-3" /> 프로필 수정
                 </button>
                 <div className="h-px bg-gray-100 my-1"></div>
@@ -320,19 +315,17 @@ const FunctionalBoard = ({ user, onNavigate, onLogout }) => {
         </div>
       </header>
 
-      {/* Board Content */}
       <main className="flex-1 overflow-auto p-12 flex flex-col items-center">
         <div className="w-full max-w-5xl">
           <h2 className="text-3xl font-light text-gray-800 mb-2">Functional Board</h2>
           <p className="text-sm text-gray-500 mb-10">원하는 업무 기지를 선택하세요.</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Devices Card */}
             <div 
               onClick={() => onNavigate('dashboard')}
-              className="bg-white rounded-3xl p-8 cursor-pointer border border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover-breath group"
+              className="bg-white rounded-3xl p-8 cursor-pointer border border-transparent shadow-[0_10px_40px_rgba(0,0,0,0.08)] hover-breath group"
             >
-              <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-gray-800 transition-colors duration-500">
+              <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-gray-800 transition-colors duration-500 shadow-inner">
                 <Server className="w-6 h-6 text-gray-600 group-hover:text-white transition-colors duration-500" strokeWidth={1.5} />
               </div>
               <h3 className="text-xl font-medium text-gray-800 mb-2">Devices</h3>
@@ -341,8 +334,7 @@ const FunctionalBoard = ({ user, onNavigate, onLogout }) => {
               </p>
             </div>
             
-            {/* Disabled Card Example */}
-            <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 opacity-60">
+            <div className="bg-gray-50/50 rounded-3xl p-8 border border-gray-100 opacity-60 shadow-sm">
               <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
                 <LayoutDashboard className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
               </div>
@@ -352,6 +344,78 @@ const FunctionalBoard = ({ user, onNavigate, onLogout }) => {
           </div>
         </div>
       </main>
+
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-[400px] border border-gray-100 flex flex-col relative">
+            <button onClick={() => setShowAdminModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5"/>
+            </button>
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center shadow-inner">
+                <ShieldCheck className="w-5 h-5 text-gray-800" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-800">가입 요청 관리</h3>
+            </div>
+            <div className="flex flex-col items-center justify-center py-8 bg-gray-50 rounded-xl border border-gray-100 mb-6 shadow-inner">
+              <span className="text-sm text-gray-500">현재 대기 중인 가입 요청이 없습니다.</span>
+            </div>
+            <button 
+              onClick={() => setShowAdminModal(false)}
+              className="w-full bg-gray-800 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-900 transition-colors shadow-lg shadow-gray-200"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-[320px] border border-gray-100 flex flex-col items-center relative">
+            <button onClick={() => setShowProfileModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="w-5 h-5"/>
+            </button>
+            <h3 className="text-lg font-medium text-gray-800 mb-6 w-full text-left">프로필 수정</h3>
+            
+            <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center text-white text-3xl font-medium mb-4 shadow-md ring-4 ring-gray-50 overflow-hidden">
+              {user.profileImg ? (
+                <img src={user.profileImg} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user.name === 'ADMIN' ? 'A' : user.name.charAt(0)
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mb-6">새로운 프로필 사진을 등록하세요.</p>
+            
+            <div className="w-full space-y-3">
+              <label className="w-full bg-gray-50 border border-gray-200 text-gray-700 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center cursor-pointer shadow-sm">
+                이미지 선택
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        onUpdateUser({ ...user, profileImg: reader.result });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} 
+                />
+              </label>
+              <button 
+                onClick={() => { setShowProfileModal(false); onShowToast('프로필이 성공적으로 업데이트되었습니다.'); }}
+                className="w-full bg-gray-800 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-900 transition-colors shadow-lg shadow-gray-200"
+              >
+                저장하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -368,12 +432,12 @@ const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
   };
 
   const handleDragOver = (e) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault(); 
   };
 
   const handleDrop = (e, targetStatus) => {
     e.preventDefault();
-    if (user.role === 'viewer') return; // Guest cannot modify
+    if (user.role === 'viewer') return; 
 
     const deviceId = e.dataTransfer.getData('deviceId');
     const device = devices.find(d => d.id === deviceId);
@@ -381,10 +445,8 @@ const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
     if (!device || device.status === targetStatus) return;
 
     if (targetStatus === '보관중') {
-      // 보관중으로 이동 시 대여자 정보 초기화
       setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, status: targetStatus, renter: '' } : d));
     } else {
-      // 사용중/대여중으로 이동 시 모달 호출
       setRentModal({ isOpen: true, deviceId, targetStatus });
     }
   };
@@ -411,7 +473,7 @@ const KanbanBoard = ({ devices, setDevices, user, setRentModal }) => {
                 key={device.id}
                 draggable={user.role !== 'viewer'}
                 onDragStart={(e) => handleDragStart(e, device.id)}
-                className={`bg-white p-4 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-gray-100 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}
+                className={`bg-white p-4 rounded-xl shadow-[0_5px_15px_rgba(0,0,0,0.05)] border border-gray-100 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}
               >
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs font-semibold text-gray-400 tracking-wider">{device.manufacturer}</span>
@@ -479,17 +541,15 @@ const ListView = ({ devices }) => {
 
 const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [viewType, setViewType] = useState('kanban'); // 'kanban' or 'list'
+  const [viewType, setViewType] = useState('kanban'); 
   const [devices, setDevices] = useState(INITIAL_DEVICES);
   const [rentModal, setRentModal] = useState({ isOpen: false, deviceId: null, targetStatus: '' });
   const [renterName, setRenterName] = useState('');
 
-  // Filters
   const [osFilter, setOsFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
 
-  // Computed data
   const filteredDevices = devices.filter(d => {
     if (osFilter !== 'All' && d.os !== osFilter) return false;
     if (statusFilter !== 'All' && d.status !== statusFilter) return false;
@@ -519,24 +579,25 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
 
   return (
     <div className="w-screen h-screen bg-[#f8f9fa] flex flex-col overflow-hidden animate-simple-fade">
-      {/* Header */}
       <header className="h-16 px-6 flex justify-between items-center bg-white border-b border-gray-100 z-20 shrink-0 shadow-sm relative">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-            <MonitorSmartphone className="w-4 h-4 text-gray-800" strokeWidth={2} />
-          </div>
+          <img src="/icon-192x192.png" alt="QA Base" className="w-8 h-8 drop-shadow-sm" />
           <span className="text-lg font-medium tracking-wide text-gray-800">QA BASE</span>
         </div>
 
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2 mr-4">
             <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-            <span className="text-xs text-gray-500">12</span>
+            <span className="text-xs text-gray-500">1</span>
           </div>
           
-          <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 hover-breath">
-            <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-white text-[10px] font-medium">
-              {user.name.charAt(0)}
+          <div className="flex items-center space-x-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100 shadow-sm hover-breath">
+            <div className="w-6 h-6 rounded-full bg-gray-800 flex items-center justify-center text-white text-[10px] font-medium overflow-hidden">
+              {user.profileImg ? (
+                <img src={user.profileImg} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                user.name === 'ADMIN' ? 'A' : user.name.charAt(0)
+              )}
             </div>
             <span className="text-xs font-medium text-gray-700">{user.name}</span>
           </div>
@@ -552,11 +613,9 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
         </div>
       </header>
 
-      {/* Main Body with Sidebar */}
       <div className="flex flex-1 overflow-hidden relative">
-        {/* Sidebar */}
         <aside 
-          className={`bg-white border-r border-gray-100 transition-all duration-300 ease-in-out flex flex-col z-10 ${
+          className={`bg-white border-r border-gray-100 transition-all duration-300 ease-in-out flex flex-col z-10 shadow-sm ${
             sidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full'
           }`}
         >
@@ -574,7 +633,6 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
               <Server className="w-4 h-4 text-gray-700" />
               <span className="text-sm">대시보드 (Devices)</span>
             </button>
-            {/* Note: Android/iOS merged into dashboard via filters per recommendation, but keeping UI elements if needed */}
             <button 
               onClick={() => { setOsFilter('Android'); if(!sidebarOpen) setSidebarOpen(true); }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${osFilter === 'Android' ? 'bg-green-50/50 text-green-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`}
@@ -596,7 +654,6 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
           </div>
         </aside>
 
-        {/* Sidebar Toggle Button */}
         <button 
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className={`absolute top-6 z-20 bg-white border border-gray-200 shadow-sm rounded-full p-1.5 text-gray-500 hover:text-gray-800 transition-all duration-300 ${
@@ -606,10 +663,8 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
           {sidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
-        {/* Content Area */}
         <main className={`flex-1 overflow-hidden flex flex-col p-8 transition-all duration-300 ${!sidebarOpen ? 'ml-12' : ''}`}>
           
-          {/* Header & Filters */}
           <div className="flex justify-between items-end mb-8 shrink-0">
             <div>
               <div className="flex items-center space-x-3 mb-1">
@@ -617,15 +672,14 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
                   {osFilter === 'All' ? '전체 디바이스' : osFilter}
                 </h1>
                 {user.role === 'viewer' && (
-                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded border border-gray-200 uppercase tracking-wider">Read Only</span>
+                  <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded border border-gray-200 uppercase tracking-wider shadow-sm">Read Only</span>
                 )}
               </div>
               <p className="text-sm text-gray-500">테스트 단말기의 상태를 모니터링하고 관리합니다.</p>
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* View Toggle */}
-              <div className="bg-white border border-gray-200 rounded-lg p-1 flex">
+              <div className="bg-white border border-gray-200 rounded-lg p-1 flex shadow-sm">
                 <button 
                   onClick={() => setViewType('kanban')}
                   className={`p-1.5 rounded-md transition-colors ${viewType === 'kanban' ? 'bg-gray-100 text-gray-800 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
@@ -648,9 +702,7 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
             </div>
           </div>
 
-          {/* Quick Stats & Filter Bar */}
           <div className="flex justify-between items-center bg-white p-2 pl-6 rounded-2xl shadow-sm border border-gray-100 mb-6 shrink-0">
-            {/* Stats */}
             <div className="flex space-x-6">
               <div className="flex flex-col">
                 <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total</span>
@@ -671,8 +723,7 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
               </div>
             </div>
 
-            {/* In-bar Filters */}
-            <div className="flex items-center space-x-2 bg-gray-50/50 p-1.5 rounded-xl border border-gray-50">
+            <div className="flex items-center space-x-2 bg-gray-50/50 p-1.5 rounded-xl border border-gray-50 shadow-inner">
               <Filter className="w-3.5 h-3.5 text-gray-400 ml-2" />
               <select 
                 value={osFilter} onChange={(e) => setOsFilter(e.target.value)}
@@ -695,7 +746,6 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
             </div>
           </div>
 
-          {/* Dynamic Content Area (Kanban / List) */}
           <div className="flex-1 overflow-hidden">
              {viewType === 'kanban' ? (
                <KanbanBoard devices={filteredDevices} setDevices={setDevices} user={user} setRentModal={setRentModal} />
@@ -708,7 +758,6 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
         </main>
       </div>
 
-      {/* Renter Input Modal */}
       {rentModal.isOpen && (
         <div className="fixed inset-0 bg-gray-900/20 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-[320px] transform transition-all border border-gray-100">
@@ -723,7 +772,7 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
                 placeholder="이름 (예: 홍길동)" 
                 value={renterName}
                 onChange={(e) => setRenterName(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-gray-400 focus:bg-white transition-all mb-6"
+                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm rounded-xl px-4 py-2.5 outline-none focus:border-gray-400 focus:bg-white transition-all mb-6 shadow-sm"
               />
               <div className="flex space-x-3">
                 <button 
@@ -749,23 +798,10 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
 };
 
 export default function App() {
-  // Screen States: 'splash', 'login', 'loadingBoard', 'board', 'loadingDash', 'dashboard'
   const [screen, setScreen] = useState('splash');
   const [user, setUser] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
-  const [deferredPrompt, setDeferredPrompt] = useState(null); // PWA 설치 프롬프트 상태 추가
 
-  // PWA 설치 프롬프트 이벤트 리스너 추가
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  // Styles Injection (For preview environment)
   useEffect(() => {
     const styleSheet = document.createElement("style");
     styleSheet.type = "text/css";
@@ -783,25 +819,10 @@ export default function App() {
     setToastMessage(msg);
   };
 
-  // 실제 PWA 설치 로직으로 교체
-  const handleInstallApp = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-      }
-    } else {
-      showToast('기기가 PWA 설치를 지원하지 않거나 이미 설치되어 있습니다.');
-    }
-  };
-
   return (
     <>
-      {/* Toast Notification */}
       {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
 
-      {/* Screen Routing */}
       {screen === 'splash' && (
         <SplashScreen onComplete={() => setScreen('login')} />
       )}
@@ -809,7 +830,7 @@ export default function App() {
       {screen === 'login' && (
         <LoginScreen 
           onLogin={handleLogin} 
-          onInstallApp={handleInstallApp} 
+          onInstallApp={() => showToast('기기가 PWA 설치를 지원하지 않거나 이미 설치되어 있습니다.')} 
         />
       )}
 
@@ -820,8 +841,10 @@ export default function App() {
       {screen === 'board' && (
         <FunctionalBoard 
           user={user} 
+          onUpdateUser={setUser}
           onNavigate={(target) => setScreen(target === 'dashboard' ? 'loadingDash' : target)}
           onLogout={() => { setUser(null); setScreen('login'); }}
+          onShowToast={showToast}
         />
       )}
 
