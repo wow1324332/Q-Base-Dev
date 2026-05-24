@@ -751,6 +751,17 @@ const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
     onStatusChange(deviceId, targetStatus);
   };
 
+  const calculateDDay = (dateString) => {
+    if (!dateString) return '';
+    const start = new Date(dateString);
+    start.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = today - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 0 ? 'D-Day' : `D+${diffDays}`;
+  };
+
   return (
     <div className="flex h-full gap-6 w-full animate-fade-in pb-4 overflow-x-auto no-scrollbar">
       {columns.map(col => (
@@ -764,7 +775,14 @@ const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
               <div key={device.id} draggable={user.role !== 'viewer'} onDragStart={(e) => handleDragStart(e, device.id)} onClick={() => onShowDetails(device)} className={`bg-white p-4 rounded-xl shadow-md border border-gray-200 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}>
                 <div className="flex justify-between items-start mb-2">
                   <span className="text-xs font-semibold text-gray-400 tracking-wider">{device.manufacturer}</span>
-                  <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium">{device.type}</span>
+                  <div className="flex items-center space-x-1.5">
+                    {device.status !== '보관중' && device.statusUpdatedAt && (
+                      <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 font-bold shadow-sm whitespace-nowrap">
+                        {calculateDDay(device.statusUpdatedAt)}
+                      </span>
+                    )}
+                    <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium">{device.type}</span>
+                  </div>
                 </div>
                 <h4 className="text-sm font-bold text-gray-800 mb-3">{device.name}</h4>
                 <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
@@ -793,6 +811,7 @@ const ListView = ({ devices, onShowDetails }) => {
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">제조사</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">OS</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">형태</th>
+            <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">시리얼 번호</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">사용/대여자</th>
           </tr>
         </thead>
@@ -806,6 +825,7 @@ const ListView = ({ devices, onShowDetails }) => {
               <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.manufacturer}</td>
               <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.os}</td>
               <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.type}</td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.serial || '-'}</td>
               <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.renter || '-'}</td>
             </tr>
           ))}
@@ -830,6 +850,9 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
 
   const [osFilter, setOsFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const [searchRenter, setSearchRenter] = useState('');
+  const [searchManufacturer, setSearchManufacturer] = useState('');
 
   useEffect(() => {
     const devicesRef = collection(db, 'devices');
@@ -851,7 +874,8 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const handleAddSubmit = async (e) => {
     e.preventDefault();
     try {
-      await addDoc(collection(db, 'devices'), formData);
+      const deviceToSave = { ...formData, statusUpdatedAt: formData.status === '보관중' ? null : new Date().toISOString() };
+      await addDoc(collection(db, 'devices'), deviceToSave);
       setShowAddModal(false);
       setFormData({ name: '', type: 'Bar', os: 'Android', status: '보관중', serial: '', manufacturer: '', renter: '' });
     } catch(err) { console.error("Error adding device", err); }
@@ -860,6 +884,10 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const handleUpdateDevice = async (updatedData) => {
     try {
       const { id, ...dataToSave } = updatedData;
+      const originalDevice = devices.find(d => d.id === id);
+      if (originalDevice && originalDevice.status !== dataToSave.status) {
+        dataToSave.statusUpdatedAt = dataToSave.status === '보관중' ? null : new Date().toISOString();
+      }
       await updateDoc(doc(db, 'devices', id), dataToSave);
     } catch(err) { console.error("Error updating device", err); }
   };
@@ -872,7 +900,7 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
     const device = devices.find(d => d.id === deviceId);
     if (!device || device.status === targetStatus) return;
     if (targetStatus === '보관중') {
-      updateDoc(doc(db, 'devices', deviceId), { status: targetStatus, renter: '' }).catch(console.error);
+      updateDoc(doc(db, 'devices', deviceId), { status: targetStatus, renter: '', statusUpdatedAt: null }).catch(console.error);
     } else {
       setRentModal({ isOpen: true, deviceId, targetStatus });
     }
@@ -889,10 +917,13 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const filteredDevices = devices.filter(d => {
     if (activeMenu === 'android' && d.os !== 'Android') return false;
     if (activeMenu === 'ios' && d.os !== 'iOS') return false;
-    if (activeMenu === 'dashboard') {
-      if (osFilter !== 'All' && d.os !== osFilter) return false;
-      if (typeFilter !== 'All' && d.type !== typeFilter) return false;
-    }
+    
+    if (activeMenu === 'dashboard' && osFilter !== 'All' && d.os !== osFilter) return false;
+    if (typeFilter !== 'All' && d.type !== typeFilter) return false;
+    if (statusFilter !== 'All' && d.status !== statusFilter) return false;
+    if (searchRenter && !d.renter?.toLowerCase().includes(searchRenter.toLowerCase())) return false;
+    if (searchManufacturer && !d.manufacturer?.toLowerCase().includes(searchManufacturer.toLowerCase())) return false;
+    
     return true;
   });
 
@@ -967,8 +998,8 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
             </div>
           </div>
 
-          {activeMenu === 'dashboard' && (
-            <div className="flex justify-between items-center bg-white p-3 pl-6 rounded-2xl shadow-md border border-gray-200 mb-6 shrink-0">
+          <div className="flex flex-col space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 shrink-0 animate-fade-in relative z-30">
+            <div className="flex justify-between items-center">
               <div className="flex space-x-8">
                 <div className="flex flex-col"><span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Total</span><span className="text-xl font-bold text-gray-800">{summary.total}</span></div><div className="w-px bg-gray-200 my-1"></div>
                 <div className="flex flex-col"><span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">사용중</span><span className="text-xl font-bold text-green-600">{summary.inUse}</span></div>
@@ -977,12 +1008,25 @@ const DevicesDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
               </div>
               <div className="flex items-center space-x-2 bg-gray-50 p-1.5 rounded-xl border border-gray-200 shadow-sm mr-1">
                 <Filter className="w-4 h-4 text-gray-400 ml-2" />
-                <CustomSelect value={osFilter} onChange={setOsFilter} options={[{value:'All', label:'OS 전체'}, {value:'Android', label:'Android'}, {value:'iOS', label:'iOS'}]} className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors" />
+                <CustomSelect value={statusFilter} onChange={setStatusFilter} options={[{value:'All', label:'상태 전체'}, {value:'보관중', label:'보관중'}, {value:'사용중', label:'사용중'}, {value:'대여중', label:'대여중'}]} className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors" />
                 <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                {activeMenu === 'dashboard' && (
+                  <>
+                    <CustomSelect value={osFilter} onChange={setOsFilter} options={[{value:'All', label:'OS 전체'}, {value:'Android', label:'Android'}, {value:'iOS', label:'iOS'}]} className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors" />
+                    <div className="w-px h-4 bg-gray-300 mx-1"></div>
+                  </>
+                )}
                 <CustomSelect value={typeFilter} onChange={setTypeFilter} options={[{value:'All', label:'형태 전체'}, {value:'Fold', label:'폴드'}, {value:'Flip', label:'플립'}, {value:'Bar', label:'바'}]} className="bg-transparent text-xs font-medium text-gray-700 py-1 px-2 outline-none w-24 hover:bg-gray-100 rounded-md transition-colors" />
               </div>
             </div>
-          )}
+            <div className="flex items-center space-x-3 pt-3 border-t border-gray-100">
+              <input type="text" placeholder="제조사 검색..." value={searchManufacturer} onChange={e=>setSearchManufacturer(e.target.value)} className="text-xs bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 outline-none focus:border-gray-400 transition-colors w-32 placeholder:text-gray-400" />
+              <input type="text" placeholder="사용/대여자 검색..." value={searchRenter} onChange={e=>setSearchRenter(e.target.value)} className="text-xs bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 outline-none focus:border-gray-400 transition-colors w-32 placeholder:text-gray-400" />
+              {(statusFilter !== 'All' || osFilter !== 'All' || typeFilter !== 'All' || searchManufacturer || searchRenter) && (
+                <button onClick={() => { setStatusFilter('All'); setOsFilter('All'); setTypeFilter('All'); setSearchManufacturer(''); setSearchRenter(''); }} className="text-[10px] text-gray-500 hover:text-gray-800 underline ml-2 font-medium">초기화</button>
+              )}
+            </div>
+          </div>
 
           <div className="flex-1 overflow-hidden">
              {(viewType === 'kanban' && activeMenu === 'dashboard') ? <KanbanBoard devices={filteredDevices} user={user} onStatusChange={handleStatusChangeRequest} onShowDetails={setSelectedDevice} /> : <div className="h-full overflow-auto no-scrollbar"><ListView devices={filteredDevices} onShowDetails={setSelectedDevice} /></div>}
@@ -1119,13 +1163,16 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
     const { scheduleToSlot, maxSlot } = getProjectSlots(schedules, y, m);
 
     return (
-      <div className={`flex flex-col h-full`}>
-        <div className={`grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} border-b border-gray-200 bg-gray-50 rounded-t-xl overflow-hidden shrink-0`}>
+      <div className="flex flex-col h-full rounded-2xl border border-gray-200 shadow-md overflow-hidden bg-gray-300/80 relative isolate">
+        <div className={`grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} bg-gray-100 border-b border-gray-300 shrink-0`}>
           {filteredDayNames.map((day, i) => (
-            <div key={i} className="py-2 text-center text-xs font-bold text-gray-500 tracking-widest">{day}</div>
+            <div key={i} className="py-3 text-center text-xs font-extrabold text-gray-700 tracking-widest uppercase">{day}</div>
           ))}
         </div>
-        <div className={`flex-1 grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} auto-rows-max bg-white border-l border-gray-100 rounded-b-xl shadow-sm overflow-hidden`}>
+        <div 
+          className={`flex-1 grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} gap-[1px] overflow-y-auto no-scrollbar`}
+          style={{ gridAutoRows: 'minmax(120px, 1fr)' }}
+        >
           {days.map((date, idx) => {
             if (!date && !showWeekend && (idx % 7 === 0 || idx % 7 === 6)) return null;
             if (date && !showWeekend && (date.getDay() === 0 || date.getDay() === 6)) return null;
@@ -1142,32 +1189,39 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
             }
 
             return (
-              <div key={idx} className="border-r border-b border-gray-100 flex flex-col min-h-[100px] bg-white">
-                <div className="h-7 pt-1 px-1 flex justify-start">
+              <div key={idx} className={`flex flex-col bg-white ${!date ? 'bg-gray-50/80' : 'hover:bg-gray-50/50 transition-colors duration-300'}`}>
+                <div className="h-8 pt-2 px-2 flex justify-start">
                   {date && (
-                    <span className={`text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gray-800 text-white shadow-sm' : 'text-gray-600'}`}>
+                    <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-800'}`}>
                       {date.getDate()}
                     </span>
                   )}
                 </div>
-                <div className="flex flex-col space-y-0.5 pb-1">
+                <div className="flex flex-col space-y-[2px] py-1 flex-1 overflow-visible">
                   {date && dayProjects.map((s, sIdx) => {
-                    if (!s) return <div key={`empty-${sIdx}`} className="h-5"></div>;
+                    if (!s) return <div key={`empty-${sIdx}`} className="h-[24px]"></div>;
                     
                     const isStart = s.startDate === dateStr || date.getDay() === (showWeekend ? 0 : 1) || date.getDate() === 1;
                     const isEnd = s.endDate === dateStr || date.getDay() === (showWeekend ? 6 : 5) || date.getDate() === new Date(y, m + 1, 0).getDate();
-                    const colorMap = { '예정': 'bg-gray-200 text-gray-700 border-gray-300', '진행중': 'bg-blue-100 text-blue-700 border-blue-200', 'HOLD': 'bg-orange-100 text-orange-700 border-orange-200', '완료': 'bg-green-100 text-green-700 border-green-200' };
                     
-                    const bandClasses = `h-5 text-[10px] font-bold flex items-center cursor-pointer border-y ${colorMap[s.status]} hover:opacity-80 transition-opacity ` +
-                      (isStart ? 'rounded-l-md ml-1 border-l pl-1.5 ' : 'ml-0 border-l-0 pl-1 ') +
-                      (isEnd ? 'rounded-r-md mr-1 border-r pr-1.5 ' : '-mr-[1px] border-r-0 pr-1 relative z-10 ');
+                    const colorMap = { 
+                      '예정': 'bg-gray-600 text-white shadow-sm', 
+                      '진행중': 'bg-blue-600 text-white shadow-sm', 
+                      'HOLD': 'bg-orange-500 text-white shadow-sm', 
+                      '완료': 'bg-emerald-600 text-white shadow-sm' 
+                    };
+                    
+                    const bandClasses = `h-[24px] text-[11px] font-bold flex items-center cursor-pointer transition-all hover:brightness-110 ` +
+                      colorMap[s.status] + ' ' +
+                      (isStart ? 'rounded-l-md ml-1 pl-2 ' : 'ml-0 pl-2 ') +
+                      (isEnd ? 'rounded-r-md mr-1 pr-2 ' : 'w-[calc(100%+1px)] -mr-[1px] pr-1 relative z-10 ');
 
                     return (
                       <div 
                         key={s.id} onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
                         className={bandClasses}
                       >
-                        <span className="truncate w-full leading-none">{isStart ? s.name : '\u00A0'}</span>
+                        <span className="truncate w-full leading-none mt-0.5 drop-shadow-sm">{isStart ? s.name : '\u00A0'}</span>
                       </div>
                     );
                   })}
@@ -1181,22 +1235,22 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden animate-fade-in p-4">
-      <div className="flex justify-between items-center mb-4 px-2 shrink-0">
+    <div className="h-full flex flex-col bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-gray-200 overflow-hidden animate-fade-in p-5 isolate relative">
+      <div className="flex justify-between items-center mb-5 px-2 shrink-0">
         <div className="flex items-center space-x-4">
-          <h2 className="text-2xl font-bold text-gray-800">{year}년 {month + 1}월</h2>
+          <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{year}년 {month + 1}월</h2>
           <div className="flex space-x-1">
-            <button onClick={handlePrev} className="p-1 hover:bg-gray-100 rounded-md text-gray-500 transition-colors"><ChevronLeft className="w-5 h-5"/></button>
-            <button onClick={handleNext} className="p-1 hover:bg-gray-100 rounded-md text-gray-500 transition-colors"><ChevronRight className="w-5 h-5"/></button>
+            <button onClick={handlePrev} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"><ChevronLeft className="w-5 h-5"/></button>
+            <button onClick={handleNext} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"><ChevronRight className="w-5 h-5"/></button>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <button onClick={() => setShowWeekend(!showWeekend)} className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors shadow-sm ${showWeekend ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200'}`}>
+          <button onClick={() => setShowWeekend(!showWeekend)} className={`text-xs font-bold px-4 py-2 rounded-xl border transition-all shadow-sm ${showWeekend ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
             주말 포함
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-4">
+      <div className="flex-1 overflow-hidden pb-1 rounded-2xl isolate relative">
         {renderMonthGrid(year, month)}
       </div>
     </div>
@@ -1423,7 +1477,11 @@ const ScheduleDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
           )}
 
           <div className="flex-1 overflow-hidden">
-             {activeMenu === 'calendar' && <ScheduleCalendar schedules={schedules} onShowDetails={openEditModal} />}
+             {activeMenu === 'calendar' && (
+               <div className="w-full max-w-5xl mx-auto h-full overflow-hidden">
+                 <ScheduleCalendar schedules={schedules} onShowDetails={openEditModal} />
+               </div>
+             )}
              {activeMenu === 'kanban' && <ProjectKanban projects={schedules} user={user} onStatusChange={handleStatusChange} onShowDetails={openEditModal} />}
              {activeMenu === 'list' && (
                <div className="h-full overflow-auto no-scrollbar">
