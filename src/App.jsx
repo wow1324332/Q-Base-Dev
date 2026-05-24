@@ -582,8 +582,8 @@ const AdminModal = ({ onClose }) => {
               {pendingUsers.map(u => (
                 <div key={u.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100 shadow-sm">
                   <div>
-                    <div className="text-sm font-medium text-gray-800">{u.name}</div>
-                    <div className="text-xs text-gray-400">{u.id}</div>
+                    <div className="text-sm font-medium text-gray-800 truncate max-w-[120px]" title={u.name}>{u.name}</div>
+                    <div className="text-xs text-gray-400 truncate max-w-[120px]" title={u.id}>{u.id}</div>
                   </div>
                   <button onClick={() => handleApprove(u.id)} className="bg-gray-800 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-gray-900 transition-colors shadow-sm">승인</button>
                 </div>
@@ -716,16 +716,16 @@ const DeviceDetailModal = ({ device, onClose, onUpdate, onDelete, user }) => {
           </form>
         ) : (
           <div className="space-y-4">
-             <div><span className="text-xs text-gray-400 block mb-1">디바이스명</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.name}</div></div>
+             <div><span className="text-xs text-gray-400 block mb-1">디바이스명</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.name}>{device.name}</div></div>
              <div className="grid grid-cols-2 gap-4">
-               <div><span className="text-xs text-gray-400 block mb-1">제조사</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.manufacturer}</div></div>
-               <div><span className="text-xs text-gray-400 block mb-1">OS</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.os}</div></div>
+               <div><span className="text-xs text-gray-400 block mb-1">제조사</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.manufacturer}>{device.manufacturer}</div></div>
+               <div><span className="text-xs text-gray-400 block mb-1">OS</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.os}>{device.os}</div></div>
              </div>
              <div className="grid grid-cols-2 gap-4">
-               <div><span className="text-xs text-gray-400 block mb-1">상태</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.status}</div></div>
-               <div><span className="text-xs text-gray-400 block mb-1">대여자</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.renter || '-'}</div></div>
+               <div><span className="text-xs text-gray-400 block mb-1">상태</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.status}>{device.status}</div></div>
+               <div><span className="text-xs text-gray-400 block mb-1">대여자</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.renter || '-'}>{device.renter || '-'}</div></div>
              </div>
-             <div><span className="text-xs text-gray-400 block mb-1">시리얼 번호</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm">{device.serial || '-'}</div></div>
+             <div><span className="text-xs text-gray-400 block mb-1">시리얼 번호</span><div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-200 shadow-sm truncate" title={device.serial || '-'}>{device.serial || '-'}</div></div>
              {!isViewer && (
                <div className="flex space-x-2 pt-4 border-t border-gray-100">
                  <button onClick={() => setEditMode(true)} className="flex-1 bg-gray-100 text-gray-700 text-sm font-medium py-2 rounded-xl hover:bg-gray-200 transition-colors border border-gray-200 shadow-sm">수정하기</button>
@@ -774,21 +774,21 @@ const KanbanBoard = ({ devices, user, onStatusChange, onShowDetails }) => {
             {devices.filter(d => d.status === col.id).map(device => (
               <div key={device.id} draggable={user.role !== 'viewer'} onDragStart={(e) => handleDragStart(e, device.id)} onClick={() => onShowDetails(device)} className={`bg-white p-4 rounded-xl shadow-md border border-gray-200 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}>
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-semibold text-gray-400 tracking-wider">{device.manufacturer}</span>
+                  <span className="text-xs font-semibold text-gray-400 tracking-wider truncate max-w-[100px]" title={device.manufacturer}>{device.manufacturer}</span>
                   <div className="flex items-center space-x-1.5">
                     {device.status !== '보관중' && device.statusUpdatedAt && (
                       <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full border border-red-100 font-bold shadow-sm whitespace-nowrap">
                         {calculateDDay(device.statusUpdatedAt)}
                       </span>
                     )}
-                    <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium">{device.type}</span>
+                    <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium truncate" title={device.type}>{device.type}</span>
                   </div>
                 </div>
-                <h4 className="text-sm font-bold text-gray-800 mb-3">{device.name}</h4>
+                <h4 className="text-sm font-bold text-gray-800 mb-3 truncate" title={device.name}>{device.name}</h4>
                 <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
-                  <span className="font-medium text-gray-600">{device.os}</span>
+                  <span className="font-medium text-gray-600 truncate max-w-[80px]" title={device.os}>{device.os}</span>
                   {device.renter ? (
-                    <span className="flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium border border-blue-100 shadow-sm"><User className="w-3 h-3 mr-1" /> {device.renter}</span>
+                    <span className="flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium border border-blue-100 shadow-sm truncate max-w-[140px]" title={device.renter}><User className="w-3 h-3 mr-1 shrink-0" /> <span className="truncate">{device.renter}</span></span>
                   ) : <span className="text-gray-400 italic">미할당</span>}
                 </div>
               </div>
@@ -806,7 +806,7 @@ const ListView = ({ devices, onShowDetails }) => {
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="bg-gray-100/80 border-b border-gray-200">
-            <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">상태</th>
+            <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider w-24">상태</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">디바이스명</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">제조사</th>
             <th className="px-6 py-4 text-xs font-semibold text-gray-600 tracking-wider">OS</th>
@@ -819,14 +819,14 @@ const ListView = ({ devices, onShowDetails }) => {
           {devices.map(device => (
             <tr key={device.id} onClick={() => onShowDetails(device)} className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer group">
               <td className="px-6 py-4">
-                <span className={`text-xs px-2.5 py-1 rounded-full font-bold shadow-sm ${device.status === '보관중' ? 'bg-gray-100 text-gray-600 border border-gray-200' : device.status === '사용중' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>{device.status}</span>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-bold shadow-sm whitespace-nowrap ${device.status === '보관중' ? 'bg-gray-100 text-gray-600 border border-gray-200' : device.status === '사용중' ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>{device.status}</span>
               </td>
-              <td className="px-6 py-4 text-sm font-bold text-gray-800">{device.name}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.manufacturer}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.os}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.type}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.serial || '-'}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{device.renter || '-'}</td>
+              <td className="px-6 py-4 text-sm font-bold text-gray-800"><div className="truncate max-w-[160px]" title={device.name}>{device.name}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[120px]" title={device.manufacturer}>{device.manufacturer}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[100px]" title={device.os}>{device.os}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[100px]" title={device.type}>{device.type}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[120px]" title={device.serial || '-'}>{device.serial || '-'}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[120px]" title={device.renter || '-'}>{device.renter || '-'}</div></td>
             </tr>
           ))}
         </tbody>
@@ -1084,7 +1084,7 @@ const ProjectModal = ({ isOpen, onClose, formData, setFormData, onSubmit, isView
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">상태</label>
                 {isViewer ? (
-                  <div className="w-full bg-gray-100 border border-gray-200 text-sm rounded-lg px-3 py-2 text-gray-500">{formData.status}</div>
+                  <div className="w-full bg-gray-100 border border-gray-200 text-sm rounded-lg px-3 py-2 text-gray-500 truncate" title={formData.status}>{formData.status}</div>
                 ) : (
                   <CustomSelect 
                     value={formData.status} onChange={val=>setFormData({...formData, status: val})} 
@@ -1111,7 +1111,7 @@ const ProjectModal = ({ isOpen, onClose, formData, setFormData, onSubmit, isView
   );
 };
 
-const ScheduleCalendar = ({ schedules, onShowDetails }) => {
+const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onUpdateStartDate }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); 
   const [showWeekend, setShowWeekend] = useState(true);
 
@@ -1125,8 +1125,24 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
     const daysInMonth = new Date(y, m + 1, 0).getDate();
     const firstDay = new Date(y, m, 1).getDay();
     let days = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let i = 1; i <= daysInMonth; i++) days.push(new Date(y, m, i));
+    
+    // Prev month filling
+    const prevMonthDays = new Date(y, m, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ date: new Date(y, m - 1, prevMonthDays - i), isCurrentMonth: false });
+    }
+    
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ date: new Date(y, m, i), isCurrentMonth: true });
+    }
+    
+    // Next month filling to complete the grid (usually 42 cells total for 6 rows)
+    const totalCellsNeeded = Math.ceil(days.length / 7) * 7;
+    let nextMonthDay = 1;
+    while (days.length < totalCellsNeeded) {
+      days.push({ date: new Date(y, m + 1, nextMonthDay++), isCurrentMonth: false });
+    }
     return days;
   };
 
@@ -1157,78 +1173,120 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
   };
 
   const renderMonthGrid = (y, m) => {
-    const days = getDaysArray(y, m);
+    const daysArray = getDaysArray(y, m);
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const filteredDayNames = showWeekend ? dayNames : dayNames.slice(1, 6);
     const { scheduleToSlot, maxSlot } = getProjectSlots(schedules, y, m);
 
     return (
-      <div className="flex flex-col h-full rounded-2xl border border-gray-200 shadow-md overflow-hidden bg-gray-300/80 relative isolate">
-        <div className={`grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} bg-gray-100 border-b border-gray-300 shrink-0`}>
+      <div 
+        className="flex-1 rounded-2xl border border-gray-200 bg-gray-200 flex flex-col relative z-0" 
+        style={{ overflow: 'hidden', isolation: 'isolate', maskImage: 'radial-gradient(white, black)', WebkitMaskImage: '-webkit-radial-gradient(white, black)' }}
+      >
+        <div className={`grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} bg-gray-100 border-b border-gray-200 shrink-0`}>
           {filteredDayNames.map((day, i) => (
             <div key={i} className="py-3 text-center text-xs font-extrabold text-gray-700 tracking-widest uppercase">{day}</div>
           ))}
         </div>
-        <div 
-          className={`flex-1 grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} gap-[1px] overflow-y-auto no-scrollbar`}
-          style={{ gridAutoRows: 'minmax(120px, 1fr)' }}
-        >
-          {days.map((date, idx) => {
-            if (!date && !showWeekend && (idx % 7 === 0 || idx % 7 === 6)) return null;
-            if (date && !showWeekend && (date.getDay() === 0 || date.getDay() === 6)) return null;
-            
-            const isToday = date && date.toDateString() === new Date().toDateString();
-            const dateStr = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` : '';
-            
-            const dayProjects = [];
-            if (date) {
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div 
+            className={`grid ${showWeekend ? 'grid-cols-7' : 'grid-cols-5'} gap-[1px] bg-gray-200`}
+            style={{ gridAutoRows: 'minmax(120px, max-content)' }}
+          >
+            {daysArray.map((dayObj, idx) => {
+              const { date, isCurrentMonth } = dayObj;
+              if (!showWeekend && (date.getDay() === 0 || date.getDay() === 6)) return null;
+              
+              const isToday = date.toDateString() === new Date().toDateString();
+              const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+              
+              const dayProjects = [];
               for (let i = 0; i < maxSlot; i++) {
                 const proj = schedules.find(s => s.startDate <= dateStr && s.endDate >= dateStr && scheduleToSlot[s.id] === i);
                 dayProjects.push(proj || null);
               }
-            }
 
-            return (
-              <div key={idx} className={`flex flex-col bg-white ${!date ? 'bg-gray-50/80' : 'hover:bg-gray-50/50 transition-colors duration-300'}`}>
-                <div className="h-8 pt-2 px-2 flex justify-start">
-                  {date && (
-                    <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-800'}`}>
+              return (
+                <div 
+                  key={idx} 
+                  className={`flex flex-col bg-white h-full ${!isCurrentMonth ? 'bg-gray-50/80' : 'hover:bg-gray-50/50 transition-colors duration-300'}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const resizeProjectId = e.dataTransfer.getData('resizeProjectId');
+                    if (resizeProjectId && onUpdateEndDate) {
+                      onUpdateEndDate(resizeProjectId, dateStr);
+                    }
+                    const resizeStartProjectId = e.dataTransfer.getData('resizeStartProjectId');
+                    if (resizeStartProjectId && onUpdateStartDate) {
+                      onUpdateStartDate(resizeStartProjectId, dateStr);
+                    }
+                  }}
+                >
+                  <div className="h-8 pt-2 px-2 flex justify-start shrink-0">
+                    <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-gray-900 text-white shadow-lg' : (isCurrentMonth ? 'text-gray-800' : 'text-gray-300')}`}>
                       {date.getDate()}
                     </span>
-                  )}
-                </div>
-                <div className="flex flex-col space-y-[2px] py-1 flex-1 overflow-visible">
-                  {date && dayProjects.map((s, sIdx) => {
-                    if (!s) return <div key={`empty-${sIdx}`} className="h-[24px]"></div>;
-                    
-                    const isStart = s.startDate === dateStr || date.getDay() === (showWeekend ? 0 : 1) || date.getDate() === 1;
-                    const isEnd = s.endDate === dateStr || date.getDay() === (showWeekend ? 6 : 5) || date.getDate() === new Date(y, m + 1, 0).getDate();
-                    
-                    const colorMap = { 
-                      '예정': 'bg-gray-600 text-white shadow-sm', 
-                      '진행중': 'bg-blue-600 text-white shadow-sm', 
-                      'HOLD': 'bg-orange-500 text-white shadow-sm', 
-                      '완료': 'bg-emerald-600 text-white shadow-sm' 
-                    };
-                    
-                    const bandClasses = `h-[24px] text-[11px] font-bold flex items-center cursor-pointer transition-all hover:brightness-110 ` +
-                      colorMap[s.status] + ' ' +
-                      (isStart ? 'rounded-l-md ml-1 pl-2 ' : 'ml-0 pl-2 ') +
-                      (isEnd ? 'rounded-r-md mr-1 pr-2 ' : 'w-[calc(100%+1px)] -mr-[1px] pr-1 relative z-10 ');
+                  </div>
+                  <div className="flex flex-col space-y-[2px] py-1 pb-2 flex-1">
+                    {dayProjects.map((s, sIdx) => {
+                      if (!s) return <div key={`empty-${sIdx}`} className="h-[24px] shrink-0"></div>;
+                      
+                      const isStart = s.startDate === dateStr || date.getDay() === (showWeekend ? 0 : 1);
+                      const isEnd = s.endDate === dateStr || date.getDay() === (showWeekend ? 6 : 5);
+                      const isActualStart = s.startDate === dateStr;
+                      const isActualEnd = s.endDate === dateStr;
+                      
+                      const colorMap = { 
+                        '예정': 'bg-gray-600 text-white shadow-sm', 
+                        '진행중': 'bg-blue-600 text-white shadow-sm', 
+                        'HOLD': 'bg-orange-500 text-white shadow-sm', 
+                        '완료': 'bg-emerald-600 text-white shadow-sm' 
+                      };
+                      
+                      const bandClasses = `h-[24px] shrink-0 text-[11px] font-bold flex items-center cursor-pointer transition-all hover:brightness-110 relative ` +
+                        colorMap[s.status] + ' ' +
+                        (isStart ? 'rounded-l-md ml-1 pl-2 ' : 'ml-0 pl-2 ') +
+                        (isEnd ? 'rounded-r-md mr-1 pr-2 ' : 'w-[calc(100%+1px)] -mr-[1px] pr-1 z-10 ');
 
-                    return (
-                      <div 
-                        key={s.id} onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
-                        className={bandClasses}
-                      >
-                        <span className="truncate w-full leading-none mt-0.5 drop-shadow-sm">{isStart ? s.name : '\u00A0'}</span>
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div 
+                          key={s.id} onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
+                          className={bandClasses}
+                        >
+                          {isActualStart && user?.role !== 'viewer' && (
+                            <div 
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                e.dataTransfer.setData('resizeStartProjectId', s.id);
+                              }}
+                              className="absolute left-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-white/40 z-30 rounded-l-md transition-colors"
+                              title="드래그하여 시작일 변경"
+                            />
+                          )}
+
+                          <span className="truncate w-full leading-none mt-0.5 drop-shadow-sm">{isStart ? s.name : '\u00A0'}</span>
+                          
+                          {isActualEnd && user?.role !== 'viewer' && (
+                            <div 
+                              draggable
+                              onDragStart={(e) => {
+                                e.stopPropagation();
+                                e.dataTransfer.setData('resizeProjectId', s.id);
+                              }}
+                              className="absolute right-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-white/40 z-30 rounded-r-md transition-colors"
+                              title="드래그하여 종료일 변경"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -1250,9 +1308,7 @@ const ScheduleCalendar = ({ schedules, onShowDetails }) => {
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-hidden pb-1 rounded-2xl isolate relative">
-        {renderMonthGrid(year, month)}
-      </div>
+      {renderMonthGrid(year, month)}
     </div>
   );
 };
@@ -1281,12 +1337,12 @@ const ProjectKanban = ({ projects, user, onStatusChange, onShowDetails }) => {
             {projects.filter(p => p.status === col.id).map(project => (
               <div key={project.id} draggable={user.role !== 'viewer'} onDragStart={(e) => handleDragStart(e, project.id)} onClick={() => onShowDetails(project)} className={`bg-white p-4 rounded-xl shadow-md border border-gray-200 ${user.role !== 'viewer' ? 'cursor-grab active:cursor-grabbing hover-breath' : ''} group`}>
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-xs font-semibold text-gray-400 tracking-wider">{project.department}</span>
-                  <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium">{project.startDate.slice(5)} ~ {project.endDate.slice(5)}</span>
+                  <span className="text-xs font-semibold text-gray-400 tracking-wider truncate max-w-[120px]" title={project.department}>{project.department}</span>
+                  <span className="text-[10px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-full border border-gray-100 font-medium whitespace-nowrap shrink-0">{project.startDate.slice(5)} ~ {project.endDate.slice(5)}</span>
                 </div>
-                <h4 className="text-sm font-bold text-gray-800 mb-3 line-clamp-2">{project.name}</h4>
+                <h4 className="text-sm font-bold text-gray-800 mb-3 truncate" title={project.name}>{project.name}</h4>
                 <div className="flex justify-between items-center text-xs text-gray-500 border-t border-gray-50 pt-3">
-                  <span className="flex items-center bg-gray-50 text-gray-600 px-2 py-1 rounded-md font-medium border border-gray-100 shadow-sm"><User className="w-3 h-3 mr-1" /> {project.assignee}</span>
+                  <span className="flex items-center bg-gray-50 text-gray-600 px-2 py-1 rounded-md font-medium border border-gray-100 shadow-sm truncate max-w-[150px]" title={project.assignee}><User className="w-3 h-3 mr-1 shrink-0" /> <span className="truncate">{project.assignee}</span></span>
                 </div>
               </div>
             ))}
@@ -1315,11 +1371,11 @@ const ProjectList = ({ projects, onShowDetails }) => {
             const colorMap = { '예정': 'bg-gray-100 text-gray-600 border-gray-200', '진행중': 'bg-blue-50 text-blue-600 border-blue-200', 'HOLD': 'bg-orange-50 text-orange-600 border-orange-200', '완료': 'bg-green-50 text-green-600 border-green-200' };
             return (
             <tr key={project.id} onClick={() => onShowDetails(project)} className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer group">
-              <td className="px-6 py-4"><span className={`text-xs px-2.5 py-1 rounded-full font-bold shadow-sm border ${colorMap[project.status]}`}>{project.status}</span></td>
-              <td className="px-6 py-4 text-sm font-bold text-gray-800">{project.name}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{project.startDate} ~ {project.endDate}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{project.assignee}</td>
-              <td className="px-6 py-4 text-sm font-medium text-gray-600">{project.department}</td>
+              <td className="px-6 py-4"><span className={`text-xs px-2.5 py-1 rounded-full font-bold shadow-sm border whitespace-nowrap ${colorMap[project.status]}`}>{project.status}</span></td>
+              <td className="px-6 py-4 text-sm font-bold text-gray-800"><div className="truncate max-w-[280px]" title={project.name}>{project.name}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600 whitespace-nowrap">{project.startDate} ~ {project.endDate}</td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[150px]" title={project.assignee}>{project.assignee}</div></td>
+              <td className="px-6 py-4 text-sm font-medium text-gray-600"><div className="truncate max-w-[150px]" title={project.department}>{project.department}</div></td>
             </tr>
           )})}
         </tbody>
@@ -1373,6 +1429,24 @@ const ScheduleDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
   const handleStatusChange = async (id, targetStatus) => {
     try { await updateDoc(doc(db, 'schedules', id), { status: targetStatus }); } 
     catch(err) { console.error("Error updating schedule status", err); }
+  };
+
+  const handleUpdateEndDate = async (id, newEndDate) => {
+    try {
+      const schedule = schedules.find(s => s.id === id);
+      if (schedule && newEndDate >= schedule.startDate) {
+        await updateDoc(doc(db, 'schedules', id), { endDate: newEndDate });
+      }
+    } catch(err) { console.error("Error updating end date", err); }
+  };
+
+  const handleUpdateStartDate = async (id, newStartDate) => {
+    try {
+      const schedule = schedules.find(s => s.id === id);
+      if (schedule && newStartDate <= schedule.endDate) {
+        await updateDoc(doc(db, 'schedules', id), { startDate: newStartDate });
+      }
+    } catch(err) { console.error("Error updating start date", err); }
   };
 
   const handleDeleteSchedule = async (id) => {
@@ -1479,7 +1553,7 @@ const ScheduleDashboard = ({ user, onNavigate, onLogout, onQuit }) => {
           <div className="flex-1 overflow-hidden">
              {activeMenu === 'calendar' && (
                <div className="w-full max-w-5xl mx-auto h-full overflow-hidden">
-                 <ScheduleCalendar schedules={schedules} onShowDetails={openEditModal} />
+                 <ScheduleCalendar schedules={schedules} onShowDetails={openEditModal} user={user} onUpdateEndDate={handleUpdateEndDate} onUpdateStartDate={handleUpdateStartDate} />
                </div>
              )}
              {activeMenu === 'kanban' && <ProjectKanban projects={schedules} user={user} onStatusChange={handleStatusChange} onShowDetails={openEditModal} />}
