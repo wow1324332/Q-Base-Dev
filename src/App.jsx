@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   MonitorSmartphone, Settings, LogOut, Power, User, Users, 
   LayoutDashboard, Server, Download, ShieldCheck, 
@@ -1269,16 +1270,10 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
                           key={s.id} 
                           onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
                           onMouseEnter={(e) => {
-                            if (calendarRef.current) {
-                              const rect = calendarRef.current.getBoundingClientRect();
-                              setTooltipInfo({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top, text: s.name, assignee: s.assignee });
-                            }
+                            setTooltipInfo({ visible: true, x: e.clientX, y: e.clientY, text: s.name, assignee: s.assignee });
                           }}
                           onMouseMove={(e) => {
-                            if (calendarRef.current) {
-                              const rect = calendarRef.current.getBoundingClientRect();
-                              setTooltipInfo({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top, text: s.name, assignee: s.assignee });
-                            }
+                            setTooltipInfo({ visible: true, x: e.clientX, y: e.clientY, text: s.name, assignee: s.assignee });
                           }}
                           onMouseLeave={() => setTooltipInfo({ visible: false, x: 0, y: 0, text: '', assignee: '' })}
                           className={bandClasses}
@@ -1329,14 +1324,15 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
     if (!tooltipInfo.visible) return null;
     let x = tooltipInfo.x + 15;
     let y = tooltipInfo.y + 15;
-    if (calendarRef.current) {
-      const { width, height } = calendarRef.current.getBoundingClientRect();
-      if (x + 160 > width) x = tooltipInfo.x - 160;
-      if (y + 60 > height) y = tooltipInfo.y - 60;
-    }
-    return (
+    
+    // 브라우저 뷰포트 크기를 벗어나지 않도록 방어 로직
+    if (x + 160 > window.innerWidth) x = tooltipInfo.x - 160;
+    if (y + 60 > window.innerHeight) y = tooltipInfo.y - 60;
+    
+    // React Portal을 사용하여 모든 레이아웃 간섭을 피하고 최상위에 툴팁 렌더링
+    return createPortal(
       <div 
-        className="absolute z-[9999] px-3 py-2 bg-gray-900/95 backdrop-blur-sm text-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] pointer-events-none animate-fast-fade border border-gray-700/50 flex flex-col gap-1 whitespace-nowrap"
+        className="fixed z-[99999] px-3 py-2 bg-gray-900/95 backdrop-blur-sm text-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] pointer-events-none animate-fast-fade border border-gray-700/50 flex flex-col gap-1 whitespace-nowrap"
         style={{ left: x, top: y }}
       >
         <span className="text-xs font-bold">{tooltipInfo.text}</span>
@@ -1345,7 +1341,8 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
             <User className="w-3 h-3 mr-1" /> {tooltipInfo.assignee}
           </div>
         )}
-      </div>
+      </div>,
+      document.body
     );
   };
 
