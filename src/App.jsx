@@ -45,14 +45,14 @@ const globalStyles = `
   }
 
   @keyframes cinematicFadeIn {
-    0% { opacity: 0; transform: translateY(15px); filter: blur(4px); }
-    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+    0% { opacity: 0; transform: translateY(15px); }
+    100% { opacity: 1; transform: none; }
   }
   .animate-fade-in { animation: cinematicFadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 
   @keyframes fastFadeIn {
     0% { opacity: 0; transform: translateY(8px); }
-    100% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 1; transform: none; }
   }
   .animate-fast-fade { animation: fastFadeIn 0.2s ease-out forwards; }
 
@@ -1120,6 +1120,15 @@ const ProjectModal = ({ isOpen, onClose, formData, setFormData, onSubmit, isView
 const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onUpdateStartDate }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 4, 1)); 
   const [showWeekend, setShowWeekend] = useState(true);
+  
+  const [assigneeFilter, setAssigneeFilter] = useState('All');
+  const [tooltipInfo, setTooltipInfo] = useState({ visible: false, x: 0, y: 0, text: '', assignee: '' });
+  const calendarRef = useRef(null);
+
+  const uniqueAssignees = Array.from(new Set(schedules.map(s => s.assignee).filter(Boolean)));
+  const assigneeOptions = [{ value: 'All', label: '담당자 전체' }, ...uniqueAssignees.map(a => ({ value: a, label: a }))];
+
+  const filteredSchedules = assigneeFilter === 'All' ? schedules : schedules.filter(s => s.assignee === assigneeFilter);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -1152,8 +1161,8 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
     return days;
   };
 
-  const getProjectSlots = (schedules, y, m) => {
-    const sorted = [...schedules].sort((a, b) => new Date(a.startDate) - new Date(b.startDate) || new Date(b.endDate) - new Date(a.endDate));
+  const getProjectSlots = (scheds, y, m) => {
+    const sorted = [...scheds].sort((a, b) => new Date(a.startDate) - new Date(b.startDate) || new Date(b.endDate) - new Date(a.endDate));
     const slots = []; 
     const scheduleToSlot = {};
 
@@ -1182,7 +1191,7 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
     const daysArray = getDaysArray(y, m);
     const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
     const filteredDayNames = showWeekend ? dayNames : dayNames.slice(1, 6);
-    const { scheduleToSlot, maxSlot } = getProjectSlots(schedules, y, m);
+    const { scheduleToSlot, maxSlot } = getProjectSlots(filteredSchedules, y, m);
 
     return (
       <div 
@@ -1208,7 +1217,7 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
               
               const dayProjects = [];
               for (let i = 0; i < maxSlot; i++) {
-                const proj = schedules.find(s => s.startDate <= dateStr && s.endDate >= dateStr && scheduleToSlot[s.id] === i);
+                const proj = filteredSchedules.find(s => s.startDate <= dateStr && s.endDate >= dateStr && scheduleToSlot[s.id] === i);
                 dayProjects.push(proj || null);
               }
 
@@ -1257,7 +1266,21 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
 
                       return (
                         <div 
-                          key={s.id} onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
+                          key={s.id} 
+                          onClick={(e) => { e.stopPropagation(); onShowDetails(s); }}
+                          onMouseEnter={(e) => {
+                            if (calendarRef.current) {
+                              const rect = calendarRef.current.getBoundingClientRect();
+                              setTooltipInfo({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top, text: s.name, assignee: s.assignee });
+                            }
+                          }}
+                          onMouseMove={(e) => {
+                            if (calendarRef.current) {
+                              const rect = calendarRef.current.getBoundingClientRect();
+                              setTooltipInfo({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top, text: s.name, assignee: s.assignee });
+                            }
+                          }}
+                          onMouseLeave={() => setTooltipInfo({ visible: false, x: 0, y: 0, text: '', assignee: '' })}
                           className={bandClasses}
                         >
                           {isActualStart && user?.role !== 'viewer' && (
@@ -1272,7 +1295,11 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
                             />
                           )}
 
-                          <span className="truncate w-full leading-none mt-0.5 drop-shadow-sm">{isStart ? s.name : '\u00A0'}</span>
+                          <span className="truncate w-full leading-none mt-0.5 drop-shadow-sm flex items-center pr-1">
+                            {isStart ? (
+                              <span className="truncate">{s.name}</span>
+                            ) : '\u00A0'}
+                          </span>
                           
                           {isActualEnd && user?.role !== 'viewer' && (
                             <div 
@@ -1298,8 +1325,32 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
     );
   };
 
+  const renderTooltip = () => {
+    if (!tooltipInfo.visible) return null;
+    let x = tooltipInfo.x + 15;
+    let y = tooltipInfo.y + 15;
+    if (calendarRef.current) {
+      const { width, height } = calendarRef.current.getBoundingClientRect();
+      if (x + 160 > width) x = tooltipInfo.x - 160;
+      if (y + 60 > height) y = tooltipInfo.y - 60;
+    }
+    return (
+      <div 
+        className="absolute z-[9999] px-3 py-2 bg-gray-900/95 backdrop-blur-sm text-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] pointer-events-none animate-fast-fade border border-gray-700/50 flex flex-col gap-1 whitespace-nowrap"
+        style={{ left: x, top: y }}
+      >
+        <span className="text-xs font-bold">{tooltipInfo.text}</span>
+        {tooltipInfo.assignee && (
+          <div className="flex items-center text-[10px] text-gray-300 font-medium">
+            <User className="w-3 h-3 mr-1" /> {tooltipInfo.assignee}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="h-full flex flex-col bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-gray-200 overflow-hidden animate-fade-in p-5 isolate relative">
+    <div ref={calendarRef} className="h-full flex flex-col bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.08)] border border-gray-200 overflow-hidden animate-fade-in p-5 isolate relative">
       <div className="flex justify-between items-center mb-5 px-2 shrink-0">
         <div className="flex items-center space-x-4">
           <h2 className="text-2xl font-bold text-gray-800 tracking-tight">{year}년 {month + 1}월</h2>
@@ -1309,12 +1360,19 @@ const ScheduleCalendar = ({ schedules, onShowDetails, user, onUpdateEndDate, onU
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <CustomSelect 
+            value={assigneeFilter} 
+            onChange={setAssigneeFilter} 
+            options={assigneeOptions}
+            className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-700 py-1.5 px-3 rounded-xl shadow-sm hover:bg-gray-100 transition-colors min-w-[110px]"
+          />
           <button onClick={() => setShowWeekend(!showWeekend)} className={`text-xs font-bold px-4 py-2 rounded-xl border transition-all shadow-sm ${showWeekend ? 'bg-gray-900 text-white border-gray-900 hover:bg-gray-800' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}>
             주말 포함
           </button>
         </div>
       </div>
       {renderMonthGrid(year, month)}
+      {renderTooltip()}
     </div>
   );
 };
